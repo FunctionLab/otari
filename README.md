@@ -20,7 +20,7 @@ conda activate otari
 
 ### Setup
 
-Please download and extract the trained Otari model and `resources` (containing hg38 FASTA files) `.tar.gz` files before proceeding:
+Please download and extract the trained Otari model, ConvSplice, Sei, and Seqweaver weights, as well as `resources` (containing hg38 FASTA files) `.tar.gz` files before proceeding:
 
 ```
 sh ./download_data.sh
