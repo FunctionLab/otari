@@ -28,6 +28,7 @@ sh ./download_data.sh
 
 - [Otari model](https://doi.org/10.5281/zenodo.4906996)
 - [Otari framework `resources` directory](https://doi.org/10.5281/zenodo.4906961)
+- Model weights for `predictors` including ConvSplice, Sei, and Seqweaver should be downloaded as well(link)
 
 
 ### Variant effect prediction
