@@ -64,18 +64,22 @@ Expected outputs:
 
 The configuration file and script for running train is under the `train` directory. To run Otari model training, you will need GPU computing capability (we ran training on 1x Nvidia A100 GPU). 
 
-The training data is available [here](https://doi.org/10.5281/zenodo.4907037) and should be downloaded and extracted into the `train` directory. 
+The training data is available [here](https://doi.org/10.5281/zenodo.4907037) and should be downloaded and extracted into the `resources` directory. 
 
 ```
 cd ./train
 sh ./download_data.sh  # in the train directory
 ```
 
-The Otari training configuration YAML file is provided as the `train/configs.yml` file. Please update the dataset location and path to save model weights in `train/configs.yml`.
+The Otari training configuration YAML file is provided as the `train/configs.yml` file. Please update the dataset location and path to save model weights in `train/configs.yml`, as well as any other hyperparameters that you would like to modify for training.
+
+We provide an example SLURM script `train/train.sh` for submitting a training job to a cluster. To preprocess the data and train the model from scratch, run the following scripts in order:
+```
+python preprocess/preprocess_data.py --abundance_data resources/espresso.txt --dataset espresso --output /output/dir
+sh train/train.sh
+```
 
 You can use the same conda environment to train Otari.
-
-We also provide an example SLURM script `train/train.sh` for submitting a training job to a cluster.
 
 ## Help 
 Please post in the Github issues or e-mail Aviya Litman (aviya@princeton.edu) with any questions. 
