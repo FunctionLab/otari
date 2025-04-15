@@ -1,0 +1,23 @@
+---
+dataset: 
+    loc: "/path/to/transcript/graphs"
+    name: "isoAbundanceDataset"
+    train_prop: 0.8
+    val_prop: 0.2
+
+model: 
+    args:
+        lr: 0.0002646
+        hidden_channels: 512
+        tissue_names: ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
+        num_heads: 2
+        dp_rate: 0.5
+
+train:
+    batch_size: 64
+    max_epochs: 50
+    log_every_n_steps: 128
+    
+seed: 42
+save_model: True
+model_save_path: "/path/to/save/model"
