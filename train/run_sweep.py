@@ -37,7 +37,7 @@ class IsoAbundanceDataModule(LightningDataModule):
 
 def train():
     wandb.init()
-    logger = WandbLogger(name='abundance_sweep', project='abundance_sweep', dir='/mnt/home/alitman/ceph/isoModel_w_gnn')
+    logger = WandbLogger(name='abundance_sweep', project='abundance_sweep', dir='./wandb_logs')
     configs = wandb.config
 
     # load data
@@ -68,7 +68,7 @@ def train():
         )
 
     # start training
-    trainer = Trainer(default_root_dir="../ceph/isoModel_w_gnn/model_checkpoints/",
+    trainer = Trainer(default_root_dir="./model_checkpoints",
                       max_epochs=configs['max_epochs'],
                       accelerator="gpu", devices="auto",
                       enable_checkpointing=True,

@@ -13,7 +13,7 @@ from utils.utils import load_config
 
 
 def train(configs):
-    logger = WandbLogger(name='otari', project='otari', dir='./logs')
+    logger = WandbLogger(name='otari', project='otari', dir='./wandb_logs')
     
     # load data
     dataset_path = configs.dataset.loc
