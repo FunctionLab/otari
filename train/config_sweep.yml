@@ -1,0 +1,35 @@
+program: run_sweep.py
+name: otari_sweep
+method: bayes
+metric:
+  goal: minimize
+  name: val/loss
+parameters:
+  lr:
+    distribution: uniform
+    min: 0.000001
+    max: 0.001
+  hidden_channels:
+    values: [180, 220, 320, 440, 512]
+  dp_rate:
+    values: [0.1, 0.2, 0.3, 0.4, 0.5]
+  num_heads:
+    values: [2, 4, 8]
+  batch_size:
+    values: [32, 64, 128]
+  max_epochs:
+    value: 15
+  log_every_n_steps:
+    value: 128
+  train_size:
+    value: 0.8
+  val_size:
+    value: 0.2
+  test_size:
+    value: 0.0
+  seed:
+    value: 42
+  num_tissues:
+    value: 30
+  tissue_names:
+    value: ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
