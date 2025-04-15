@@ -1,15 +1,15 @@
 import argparse
 
-from abundance_model import IsoAbundanceGNN, IsoAbundanceDataModule, PrecisionRecallPlotCallback
-from data import IsoAbundanceDataset
-from utils.utils import load_config
-
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.strategies import DDPStrategy
 from lightning.pytorch.loggers import WandbLogger, TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import random_split
 import torch
+
+from model.otari import IsoAbundanceGNN, IsoAbundanceDataModule, PrecisionRecallPlotCallback
+from utils.data import IsoAbundanceDataset
+from utils.utils import load_config
 
 
 def train(configs):

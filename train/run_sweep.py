@@ -9,8 +9,8 @@ import wandb
 import yaml
 from torch_geometric.data import DataLoader
 
-from abundance_model import IsoAbundanceGNN
-from data import IsoAbundanceDataset
+from model.otari import IsoAbundanceGNN
+from utils.data import IsoAbundanceDataset
 
 
 class IsoAbundanceDataModule(LightningDataModule):
