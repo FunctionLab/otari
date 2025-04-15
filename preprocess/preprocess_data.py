@@ -56,10 +56,10 @@ def process_espresso_abundance_data(abundance_data, embedding_data, output_path)
     
     abundance_df = pd.read_csv(abundance_data, sep='\t', header=0)
 
-    with open(f'resources/transcripts.pkl', 'rb') as f:
+    with open(f'../resources/transcripts.pkl', 'rb') as f:
         transcripts = rick.load(f)
     print(len(transcripts))
-    with open(f'resources/gene2chrom.pkl', 'rb') as f:
+    with open(f'../resources/gene2chrom.pkl', 'rb') as f:
         gene2chrom = rick.load(f)
 
     transcript_ids = abundance_df['transcript_ID'].tolist()
@@ -136,7 +136,7 @@ def process_GTEx_abundance_data(abundance_data, embedding_data, output_path):
         abundance_df[key] = abundance_df[value].mean(axis=1)
     abundance_df = abundance_df.drop(columns=filtered_tissue_names)
 
-    with open(f'resources/gene2chrom.pkl', 'rb') as f:
+    with open(f'../resources/gene2chrom.pkl', 'rb') as f:
         gene2chrom = rick.load(f)
 
     transcript_ids = abundance_df['transcript_ID'].tolist()
@@ -274,7 +274,7 @@ if __name__ == "__main__":
         path.mkdir(exist_ok=True)
 
     # load node embedding vectors
-    node_embedding_path = 'resources/reference_ConvSplice.h5'
+    node_embedding_path = '../resources/reference_ConvSplice.h5'
     embedding_data = h5py.File(node_embedding_path, 'r')
     
     if args.dataset == 'espresso':
