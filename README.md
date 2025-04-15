@@ -71,7 +71,7 @@ cd ./train
 sh ./download_data.sh  # in the train directory
 ```
 
-The Otari training configuration YAML file is provided as the `train/configs.yml` file.
+The Otari training configuration YAML file is provided as the `train/configs.yml` file. Please update the dataset location and path to save model weights in `train/configs.yml`.
 
 You can use the same conda environment to train Otari.
 
