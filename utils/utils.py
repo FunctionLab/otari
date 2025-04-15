@@ -74,7 +74,7 @@ def compute_tissue_cutoffs(dataset='espresso'):
             tissue_to_percentiles[tissue] = (percentile_lower, percentile_upper)
 
     elif dataset == 'ctx':
-        abundance_df = pd.read_csv('../resources/human_brain_data/HumanCTX_transcripts.csv')
+        abundance_df = pd.read_csv('../resources/HumanCTX_transcripts.csv')
         abundance_df = abundance_df[abundance_df['associated_transcript'] != 'novel']
 
         # take average across samples
@@ -105,10 +105,9 @@ def binarize(x, tissue, tissue_cutoffs):
 def assign_to_genes(variants, genes, window=2000):
     """
     Annotation of variants to genes.
-
     Window: bps around TSS.
     """
-    
+
     assigned_variants = []
     
     for _, row in variants.iterrows():
