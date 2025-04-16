@@ -38,27 +38,28 @@ sh ./download_data.sh
 
 Example usage:
 ```
-sh variant_effect_prediction.sh <input-file> <output-dir>
+sh variant_effect_prediction.sh <input-file> <output-dir> <annotate>
 ```
 
 Arguments:
 - `<input-file>`: .tsv input file with variants. Format must be `chr \t pos \t ref \t alt`
 - `<output-dir>`: Path to output directory (will be created if does not exist)
-
-### Example variant effect prediction run
-
-We provide `test.vcf` (hg38 coordinates) so you can try running this command once you have installed all the requirements. Additionally, `example_slurm_scripts` contains example scripts with the same expected input arguments if you need to submit your job to a compute cluster. 
-
-Example command run on GPU:
-```
-sh variant_effect_prediction.sh test.vcf ./test_outputs
-```
+- `<annotate>`: boolean True or False (default is True). Annotate should only be set to false if variants are already annotated to genes and strands (make sure the genes column is called `genes`). 
 
 Expected outputs:
 -  `variant_effects_comprehensive.tsv`: variant effect prediction for every isoform and tissue. Includes `max_effect` and `mean_effect` across tissues. 
 - `max_variant_effects_across_transcripts.tsv`: variant effects aggregated by gene (max effect isoform for each gene and tissue).
 - `interpretability_analysis.tsv`: interpretability metrics including most impacted node and features.
 - `variant_to_most_affected_node_embedding.pkl`: node sequence attributes for the most impacted node for each variant and transcript.
+
+### Example variant effect prediction run
+
+We provide `test.tsv` (hg38 coordinates) so you can try running this command once you have installed all the requirements. Additionally, `example_slurm_scripts` contains example scripts with the same expected input arguments if you need to submit your job to a compute cluster. 
+
+Example command run on GPU:
+```
+sh variant_effect_prediction.sh test.tsv ./test_outputs
+```
 
 ## Training
 
