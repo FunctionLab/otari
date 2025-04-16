@@ -16,7 +16,18 @@ from utils.genome_utils import Genome
 
 def QC_variants(variants):
     """
-    Remove indels and variants in X,Y,M chromosomes.
+    Perform quality control on a DataFrame of genetic variants.
+    This function filters out duplicate variants, indels (insertions and deletions),
+    and variants located on sex chromosomes (X, Y) or mitochondrial DNA (M).
+    Args:
+        variants (pd.DataFrame): A DataFrame containing genetic variant information.
+            It is expected to have the following columns:
+            - 'ref': Reference allele as a string.
+            - 'alt': Alternate allele as a string.
+            - 'chr': Chromosome identifier as a string.
+    Returns:
+        pd.DataFrame: A filtered DataFrame containing only unique single nucleotide
+        variants (SNVs) located on autosomal chromosomes.
     """
 
     variants = variants.drop_duplicates(keep='first')
@@ -30,10 +41,39 @@ def QC_variants(variants):
 
 def reformat_graph(embed, transcript_id, gene_id, transcript_variant_identifiers):
     """
-    Convert node embeddings to a directed graph object.
-    transcript_variant_identifiers: dictionary with 'identifiers' and 'segment_id' keys.
+    Converts node embeddings into a directed graph object.
+    This function processes node embeddings and constructs a directed graph 
+    representation using PyTorch Geometric's `Data` object. It identifies 
+    edges between consecutive segments that are exons and creates a graph 
+    with node features, edge indices, and additional metadata.
+    Args:
+        embed (list or numpy.ndarray): Node embeddings representing features 
+            for each segment in the transcript.
+        transcript_id (str): Identifier for the transcript associated with 
+            the graph.
+        gene_id (str): Identifier for the gene associated with the transcript.
+        transcript_variant_identifiers (dict): Dictionary containing metadata 
+            about the transcript.
+    Returns:
+        torch_geometric.data.Data: A PyTorch Geometric `Data` object containing:
+            - `x` (torch.Tensor): Node feature matrix.
+            - `edge_index` (torch.Tensor): Edge indices defining the graph structure.
+            - `transcript_id` (str): Transcript identifier.
+            - `identifiers` (list): Variant identifiers.
+            - `gene_id` (str): Gene identifier.
+            - `transcripts` (str): Transcript identifier (duplicated for metadata).
+    Example:
+        >>> embed = [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]
+        >>> transcript_id = "ENST00000367770"
+        >>> gene_id = "ENSG00000157764"
+        >>> transcript_variant_identifiers = {
+        ...     "identifiers": ["var1", "var2", "var3"],
+        ... }
+        >>> graph = reformat_graph(embed, transcript_id, gene_id, transcript_variant_identifiers)
+        >>> print(graph)
+        Data(x=[3, 2], edge_index=[2, 1], transcript_id='ENST00000367770', ...)
     """
-    
+
     edges = [] 
     segment_ids = transcript_variant_identifiers['segment_id']
     exon_indices = [i for i, x in enumerate(segment_ids) if x == b'e']
@@ -63,7 +103,35 @@ def reformat_graph(embed, transcript_id, gene_id, transcript_variant_identifiers
 
 def predict_variant_effects(variant_path, model_path, output_path, annotate):
     """
-    Evaluate variant effects on isoform usage and graph structure.
+    Predict the effects of genetic variants on isoform usage and graph structure.
+    This function processes a set of genetic variants, evaluates their effects on 
+    transcript isoforms, and computes various metrics to quantify the impact of 
+    these variants. The results include variant effect scores, interpretability 
+    analysis, and node embeddings for the most impacted nodes.
+    Args:
+        variant_path (str): Path to the input file containing variant information 
+            in TSV format with columns: 'chr', 'pos', 'ref', 'alt'.
+        model_path (str): Path to the pre-trained model file for prediction.
+        output_path (str): Directory where the output files will be saved.
+        annotate (bool): Whether to annotate variants with gene information.
+    Outputs:
+        - 'variant_effects_comprehensive.tsv': A comprehensive table of variant 
+          effects across all transcripts and tissues.
+        - 'max_variant_effects_across_transcripts.tsv': A summary table of the 
+          maximum absolute effects per variant across transcripts.
+        - 'interpretability_analysis.tsv': A table containing interpretability 
+          analysis results, including the most affected node and top features.
+        - 'variant_to_most_affected_node_embedding.pkl': A pickle file containing 
+          node embeddings for the most impacted nodes for each variant.
+    Notes:
+        - The function performs quality control (QC) on the input variants.
+        - If `annotate` is True, variants are assigned to genes using a GTF file.
+        - The function uses a pre-trained model to predict the effects of variants 
+          on transcript graphs.
+        - Z-score normalization is applied to graph features before computing 
+          interpretability metrics.
+        - Tissue-specific scores are calculated as log2 fold changes between 
+          alternative and reference predictions.
     """
 
     variants = pd.read_csv(variant_path, sep='\t') # .tsv with columns: chr, pos, ref, alt

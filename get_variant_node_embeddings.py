@@ -18,19 +18,44 @@ CHR_INDEX_DICT = {'1':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9,
 
 
 def read_gtf():
+    """
+    Reads a GTF (Gene Transfer Format) file and initializes a GTFReader object.
+
+    This function sets up a GTFReader instance using the specified GTF file and genome
+    file paths. It also enables the addition of splice site information.
+
+    Returns:
+        GTFReader: An instance of the GTFReader initialized with the provided GTF
+        and genome file paths.
+    """
     gtf_path = 'resources/gencode.v47.basic.annotation.gtf'
     genome_path = 'resources/hg38.fa'
     gtf_reader = GTFReader(gtf_path, genome_path = genome_path, add_splice_site = True)
     return gtf_reader
 
 
-def read_vcf(vcf_path):
-    vcf = VCF(vcf_path, strict_gt = True)
+def read_vcf_tsv(vcf_path):
+    """
+    Reads a VCF file in TSV format and returns its contents as a pandas DataFrame.
+
+    The input file is expected to have the following columns:
+    - chr: Chromosome identifier
+    - pos: Position on the chromosome
+    - ref: Reference allele
+    - alt: Alternate allele
+
+    Args:
+        vcf_path (str): The file path to the VCF TSV file.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing the VCF data with columns ['chr', 'pos', 'ref', 'alt'].
+    """
+    vcf = pd.read_csv(vcf_path, sep = '\t') # columns: chr, pos, ref, alt
     return vcf
 
 
-def read_vcf_tsv(vcf_path):
-    vcf = pd.read_csv(vcf_path, sep = '\t') # columns: chr, pos, ref, alt
+def read_vcf(vcf_path):
+    vcf = VCF(vcf_path, strict_gt = True)
     return vcf
 
 
@@ -43,6 +68,25 @@ def check_vcf_file(vcf_path):
 
 
 def get_variant_in_region(chrom, region, variant_series):
+    """
+    Retrieve variant information if it falls within a specified genomic region.
+    Args:
+        chrom (str): Chromosome identifier (e.g., 'chr1', 'chrX'). The 'chr' prefix is optional.
+        region (tuple): A tuple specifying the start and end positions of the region (0-based, inclusive start, exclusive end).
+        variant_series (pd.Series): A pandas Series containing variant information with the following keys:
+            - 'pos': The 1-based position of the variant.
+            - 'ref': The reference allele.
+            - 'alt': The alternate allele.
+    Returns:
+        list: A list containing a single tuple with the variant information if it falls within the region.
+              The tuple contains:
+              - chrom (str): Chromosome identifier.
+              - pos (int): 0-based position of the variant.
+              - ref (str): Reference allele.
+              - alt (str): Alternate allele.
+              - rs_id (str): A unique identifier for the variant in the format '<chrom>_<1-based pos>_<ref>_<alt>_hg38'.
+              Returns an empty list if the variant is not within the region or if the chromosome is invalid.
+    """
     _chrom = chrom.replace('chr', '')
 
     if _chrom not in CHR_INDEX_DICT:
@@ -63,6 +107,20 @@ def get_variant_in_region(chrom, region, variant_series):
 
 
 def get_predictor_region_of_interest(ref_pos, predictor_name):
+    """
+    Determines the region of interest around a reference position based on the predictor's name.
+    Parameters:
+        ref_pos (int): The reference position (e.g., genomic coordinate).
+        predictor_name (str): The name of the predictor. Supported values are:
+            - 'sei': Returns a region of interest spanning 2048 bases upstream and downstream.
+            - 'seqweaver': Returns a region of interest spanning 1000 bases upstream and downstream.
+            - 'ConvSplice': Returns a region of interest spanning 10000 bases upstream and downstream.
+    Returns:
+        list: A list containing two integers [start, end], representing the start and end positions
+              of the region of interest.
+    Raises:
+        ValueError: If the predictor_name is not recognized.
+    """
     if predictor_name == 'sei':
         return [ref_pos - 2048, ref_pos + 2048]
     
@@ -77,6 +135,20 @@ def get_predictor_region_of_interest(ref_pos, predictor_name):
 
 
 def reorder_embed(input_emb):
+    """
+    Reorders the input embedding array based on a specific feature index mapping.
+
+    This function takes an input embedding array, converts it to a NumPy array, 
+    and reorders its elements according to a predefined feature index. The 
+    feature index is constructed by combining specific ranges and individual 
+    indices to rearrange the embedding dimensions.
+
+    Args:
+        input_emb (array-like): The input embedding array to be reordered.
+
+    Returns:
+        numpy.ndarray: The reordered embedding array.
+    """
     input_emb = np.array(input_emb)
     feature_idx = np.array([0, 1] + list(range(4, 1736 + 4)) + list(range(4 + 1736 * 2, 4 + 1736 * 2 + 10062)) + [2, 3] + 
                            list(range(4 + 1736, 4 + 1736 * 2)) + list(range(4 + 1736 * 2 + 10062, 4 + 1736 * 2 + 10062 * 2)))
@@ -84,13 +156,41 @@ def reorder_embed(input_emb):
     
 
 def get_transcript_embedding(transcript, predictor_names, predictors, vcf, verbose = 1):
-    '''
-    This function takes a transcript object and returns the embedding of the transcript and its variants.
-    transcript : Transcript object
-    predictor_names : list of strings
-    predictors : dict of predictor objects
-    vcf : cyvcf2.VCF or .tsv vcf pandas object
-    '''
+    """
+    Generate transcript embeddings and variant embeddings for a given transcript.
+    This function computes reference embeddings for the segments of a transcript 
+    using specified predictors for the variants provided in the VCF/.tsv file.
+    Args:
+        transcript (object): 
+            A transcript object containing the following attributes:
+            - chrom (str): Chromosome name.
+            - strand (str): Strand information ('+' or '-').
+            - exons (list of tuples): List of exon start and end positions.
+        predictor_names (list of str): 
+            List of predictor names to use for generating embeddings.
+        predictors (dict): 
+            A dictionary mapping predictor names to predictor objects. Each 
+            predictor object must implement a `predict_batch` method.
+        vcf (object or None): 
+            A VCF object containing variant information. If None, only reference 
+            embeddings are computed.
+        verbose (int, optional): 
+            Verbosity level for logging. Default is 1.
+    Returns:
+        tuple: A tuple containing:
+            - transcript_variant_embeddings (dict): 
+                A dictionary where keys are variant IDs (or 'reference') and 
+                values are numpy arrays of embeddings for each exon.
+            - transcript_variant_identifiers (dict): 
+                A dictionary where keys are variant IDs (or 'reference') and 
+                values are dictionaries containing:
+                - 'identifiers' (numpy array): Array of exon identifiers 
+                    (chromosome, start, end, strand).
+    Example:
+        >>> transcript_variant_embeddings, transcript_variant_identifiers = get_transcript_embedding(
+        ...     transcript, predictor_names, predictors, vcf, verbose=1
+        ... )
+    """
 
     chrom = transcript.chrom 
     strand = transcript.strand
@@ -117,8 +217,6 @@ def get_transcript_embedding(transcript, predictor_names, predictors, vcf, verbo
     transcript_variant_identifiers = defaultdict(lambda: defaultdict(list))
     embedding = []
     identifiers = []
-    segment_id = []
-    edge_embeddings = []
     for idx, exon in enumerate(exons):
         _embedding = []
         for predictor_name in predictor_names:
@@ -130,19 +228,9 @@ def get_transcript_embedding(transcript, predictor_names, predictors, vcf, verbo
                 _embedding.extend(reference_embedding[predictor_name][2 * idx])
         embedding.append(reorder_embed(_embedding))
         identifiers.append((str(chrom.replace('chr', '')), int(exon[0]), int(exon[1]), str(strand)))
-        segment_id.append('e')
-        # compute distance between exons for edge embeddings
-        if idx < len(exons) - 1:
-            next_exon = exons[idx+1]
-            if strand == '+':
-                edge_embeddings.append(abs(next_exon[0] - exon[1]))
-            else:
-                edge_embeddings.append(abs(exon[0] - next_exon[1]))
                 
     transcript_variant_embeddings['reference'] = np.array(embedding)
     transcript_variant_identifiers['reference']['identifiers'] = np.array(identifiers, dtype=dt)
-    transcript_variant_identifiers['reference']['segment_id'] = np.array(segment_id, dtype='S1')
-    transcript_variant_identifiers['reference']['edge_embeddings'] = np.array(edge_embeddings)
 
     if vcf is None:
         return transcript_variant_embeddings, transcript_variant_identifiers
@@ -198,7 +286,6 @@ def get_transcript_embedding(transcript, predictor_names, predictors, vcf, verbo
     for variant_id in all_variant_ids:
         embedding = []
         identifiers = []
-        segment_id = []
         sp = variant_id.split('_')
         variant_pos, _, variant_alt = int(sp[1]) - 1, sp[2], sp[3]
         for idx, exon in enumerate(exons):
@@ -233,17 +320,30 @@ def get_transcript_embedding(transcript, predictor_names, predictors, vcf, verbo
                             
             embedding.append(reorder_embed(_embedding)) # append embedding for a single exon
             identifiers.append((str(chrom.replace('chr', '')), int(exon[0]), int(exon[1]), str(strand)))
-            segment_id.append('e')
                 
         transcript_variant_embeddings[variant_id] = np.array(embedding)
         transcript_variant_identifiers[variant_id]['identifiers'] = np.array(identifiers, dtype=dt)
-        transcript_variant_identifiers[variant_id]['segment_id'] = np.array(segment_id, dtype='S1')
-        transcript_variant_identifiers[variant_id]['edge_embeddings'] = np.array(edge_embeddings)
         
     return transcript_variant_embeddings, transcript_variant_identifiers
 
 
 def main(transcript_ids, variants, gtf_reader, genome):    
+    """
+    Main function to generate composite embeddings and identifiers for transcripts 
+    based on variant predictions using multiple predictors.
+    Args:
+        transcript_ids (list): A list of transcript IDs to process.
+        variants (dict): A dictionary of variants to be used for predictions.
+        gtf_reader (object): An object that provides access to transcript information.
+        genome (object): A genome object used by the predictors for making predictions.
+    Returns:
+        tuple: A tuple containing:
+            - composite_embeddings (dict): A dictionary where keys are transcript IDs 
+              and values are embeddings for the variants of the corresponding transcript.
+            - composite_identifiers (dict): A dictionary where keys are transcript IDs 
+              and values are identifiers for the variants of the corresponding transcript.
+    """
+
     predictor_names = ['ConvSplice', 'seqweaver', 'sei']
 
     print('Making predictions using the following predictors:')
