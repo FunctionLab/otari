@@ -8,9 +8,16 @@
 #SBATCH --mem=100G
 
 vcf_filepath="${1:-}"  # path to vcf file
-outdir="${3:-}"        # path to output dir
+outdir="${2:-}"        # path to output dir
+annotate="${3:-true}" # whether to annotate
 
-python variant_effect_prediction.py \
-    --variant_path $vcf_filepath \
-    --output_path $outdir \
-    --annotate
+if [ "$annotate" = "true" ]; then
+    python variant_effect_prediction.py \
+        --variant_path $vcf_filepath \
+        --output_path $outdir \
+        --annotate
+else
+    python variant_effect_prediction.py \
+        --variant_path $vcf_filepath \
+        --output_path $outdir
+fi
