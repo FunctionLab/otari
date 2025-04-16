@@ -101,7 +101,7 @@ def reformat_graph(embed, transcript_id, gene_id, transcript_variant_identifiers
     return graph_data
 
 
-def predict_variant_effects(variant_path, model_path, output_path, annotate):
+def predict_variant_effects(model_path, variant_path, output_path, annotate):
     """
     Predict the effects of genetic variants on isoform usage and graph structure.
     This function processes a set of genetic variants, evaluates their effects on 
@@ -109,9 +109,9 @@ def predict_variant_effects(variant_path, model_path, output_path, annotate):
     these variants. The results include variant effect scores, interpretability 
     analysis, and node embeddings for the most impacted nodes.
     Args:
+        model_path (str): Path to the pre-trained model file for prediction.
         variant_path (str): Path to the input file containing variant information 
             in TSV format with columns: 'chr', 'pos', 'ref', 'alt'.
-        model_path (str): Path to the pre-trained model file for prediction.
         output_path (str): Directory where the output files will be saved.
         annotate (bool): Whether to annotate variants with gene information.
     Outputs:
@@ -245,13 +245,14 @@ def predict_variant_effects(variant_path, model_path, output_path, annotate):
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Predict variant effects on isoform expression.')
     parser.add_argument('--variant_path', type=str, required=True, help='Path to the variant file (tsv).')
-    parser.add_argument('--model_path', type=str, required=True, help='Path to the model weights.')
     parser.add_argument('--output_path', type=str, required=True, help='Path to the output directory.')
     parser.add_argument('--annotate', action='store_true', default=True, help='Whether to annotate variants to genes.')
     args = parser.parse_args()
 
     if not os.path.exists(args.output_path):
         os.makedirs(args.output_path)
+
+    model_path = 'resources/otari.pth'
     
-    predict_variant_effects(args.variant_path, args.model_path, args.output_path, annotate=args.annotate)
+    predict_variant_effects(model_path, args.variant_path, args.output_path, annotate=args.annotate)
     print('Variant effect prediction completed.')
