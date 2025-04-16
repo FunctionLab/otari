@@ -72,11 +72,11 @@ cd ./train
 sh ./download_data.sh  # in the train directory
 ```
 
-The Otari training configuration YAML file is provided as the `train/configs.yml` file. Please update the dataset location and path to save model weights in `train/configs.yml`, as well as any other hyperparameters that you would like to modify for training.
+The Otari training configuration YAML file is provided as the `train/configs.yml` file. Please update the dataset location (same as `<output_dir>` below) in `train/configs.yml`, as well as any other hyperparameters that you would like to modify for training.
 
 We provide an example SLURM script `train/train.sh` for submitting a training job to a cluster. To preprocess the data and train the model from scratch, run the following scripts in order:
 ```
-python preprocess/preprocess_data.py --abundance_data resources/espresso.txt --dataset espresso --output /output/dir
+sh preprocess/preprocess_data.sh resources/espresso.txt 'espresso' <output_dir>
 sh train/train.sh
 ```
 
