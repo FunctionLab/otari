@@ -13,6 +13,25 @@ from utils.utils import load_config
 
 
 def train(configs):
+    """
+    Train a graph neural network (GNN) model for isoform abundance prediction.
+    Args:
+        configs (Namespace): Configuration object containing all necessary parameters for training, 
+                             including dataset paths, model hyperparameters, and training settings.
+    Workflow:
+        1. Initializes a WandbLogger for experiment tracking.
+        2. Loads the dataset and splits it into training, validation, and test sets.
+           - Chromosome 8 is held out for testing.
+        3. Prepares the data using the IsoAbundanceDataModule.
+        4. Creates an IsoAbundanceGNN model with the specified configurations.
+        5. Sets up a Trainer with GPU acceleration, checkpointing, and logging.
+        6. Trains the model using the training and validation datasets.
+        7. Evaluates the model on the test dataset using the best checkpoint.
+        8. Optionally saves the trained model to the specified path.
+    Notes:
+        - The dataset is expected to be in the form of PyTorch Geometric data objects.
+        - The model is trained using distributed data parallel (DDP) strategy if multiple GPUs are available.
+    """
     logger = WandbLogger(name='otari', project='otari', dir='./wandb_logs')
     
     # load data

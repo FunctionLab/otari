@@ -13,14 +13,21 @@ import h5py
 
 def convert_edges(edges):
     """
-    Convert edge connections to construct an undirected gene graph.
-    
-    'edges' has columns: 'Node1', 'Node2', each column represents node ID.
-    ID is assumed to be 0-based integer.
+    Converts edge connections into a PyTorch tensor for graph representation.
+
+    Args:
+        edges (pd.DataFrame): A DataFrame with two columns ('Node1', 'Node2'), 
+                              where each row represents an edge between two nodes. 
+                              Node IDs are assumed to be 0-based integers.
+
+    Returns:
+        torch.Tensor: A tensor of shape (2, num_edges) representing the edge index 
+                      in a format compatible with PyTorch Geometric. The tensor is 
+                      transposed and contiguous for efficient processing.
     """
     edges = edges.astype(int)
     edge_index = torch.tensor(edges.values, dtype=torch.long)
-    edge_index=edge_index.t().contiguous()
+    edge_index = edge_index.t().contiguous()
     return edge_index
 
 
@@ -108,8 +115,24 @@ def process_espresso_abundance_data(abundance_data, embedding_data, output_path)
 
 def process_GTEx_abundance_data(abundance_data, embedding_data, output_path):
     """
-    Process GTEx abundance data.
+    Processes GTEx abundance data and generates graph representations for transcripts.
+    This function reads transcript abundance data, filters and aggregates it by tissue types, 
+    normalizes the data, and combines it with transcript embeddings to create graph data objects. 
+    The resulting graph data objects are saved to a specified output path.
+    Args:
+        abundance_data (str): Path to the input abundance data file in tab-separated format.
+        embedding_data (dict): A dictionary containing transcript embeddings. The keys are 
+            transcript IDs, and the values are dictionaries with embedding information.
+        output_path (str): Directory path where the processed graph data objects will be saved.
+    Notes:
+        - The function excludes specific tissue types ('Cells - Cultured fibroblasts', 'K562') 
+          from the analysis.
+        - Transcripts associated with chromosomes 'X', 'Y', and 'M' are excluded.
+        - Abundance values are normalized using log2 transformation with a pseudocount of 0.01.
+        - Graph data objects are created using PyTorch Geometric's `Data` class, with node 
+          attributes, edge indices, and target values.
     """
+    
     
     abundance_df = pd.read_csv(abundance_data, sep='\t', header=0)
 
@@ -184,7 +207,25 @@ def process_GTEx_abundance_data(abundance_data, embedding_data, output_path):
 
 def process_CTX_abundance_data(abundance_data, embedding_data, output_path):
     """
-    Process Human and Fetal CTX data.
+    Processes Human and Fetal CTX abundance data and generates graph data objects for each transcript.
+    This function reads abundance data from a CSV file, filters out novel transcripts, computes average 
+    abundance values for adult and fetal CTX samples, and constructs graph data objects for each transcript 
+    using node embeddings and edge information. The resulting graph data objects are saved to a specified 
+    output path.
+    Args:
+        abundance_data (str): Path to the CSV file containing abundance data. The file should include columns 
+                              for transcript information, sample-specific abundance values, and chromosome data.
+        embedding_data (dict): A dictionary containing node embeddings for each transcript. The keys are 
+                               transcript IDs, and the values are dictionaries with a 'reference' key pointing 
+                               to the embedding array.
+        output_path (str): Path to the directory where the processed graph data objects will be saved.
+    Notes:
+        - The function excludes transcripts located on chromosomes X, Y, and M.
+        - Abundance values are normalized using log2 transformation with a pseudocount of 0.01.
+        - Node embeddings are used to construct graph nodes, and edges are created sequentially between 
+          adjacent segments.
+        - The resulting graph data objects include node features (`x`), edge indices (`edge_index`), 
+          target abundance values (`y`), transcript ID (`transcript_id`), and chromosome number (`chrom`).
     """
 
     abundance_df = pd.read_csv(abundance_data, header=0)
