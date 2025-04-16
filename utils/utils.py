@@ -21,7 +21,29 @@ class DotDict(dict):
 
 def compute_tissue_cutoffs(dataset='espresso'):
     """
-    Compute the cutoffs for each tissue to binarize the expression values.
+    Compute the percentile cutoffs for each tissue to binarize expression values 
+    based on the specified dataset. The function supports three datasets: 
+    'espresso', 'gtex', and 'ctx'. For each dataset, it processes the expression 
+    data, normalizes it using log2 transformation with a pseudocount, and computes 
+    the 30th and 70th percentiles for each tissue.
+    Args:
+        dataset (str): The dataset to process. Options are:
+            - 'espresso': Uses ESPRESSO isoform data.
+            - 'gtex': Uses GTEx long-read isoform data.
+            - 'ctx': Uses HumanCTX transcript data.
+          Default is 'espresso'.
+    Returns:
+        dict: A dictionary where keys are tissue names and values are tuples 
+        containing the 30th and 70th percentile cutoffs for the respective tissue.
+    Notes:
+        - For 'espresso', the function reads data from 
+          '../resources/isoform_data_cpm_ESPRESSO_add_features.tsv.gz'.
+        - For 'gtex', the function reads data from 
+          '../resources/isoform_data_tpm_GTEx_long_reads_add_features.tsv.gz', 
+          merges samples from the same tissues, and excludes certain cell lines.
+        - For 'ctx', the function reads data from 
+          '../resources/HumanCTX_transcripts.csv', filters out novel transcripts, 
+          and computes averages across samples for adult and fetal cortex.
     """
 
     tissue_to_percentiles = {}
@@ -104,8 +126,31 @@ def binarize(x, tissue, tissue_cutoffs):
 
 def assign_to_genes(variants, genes, window=2000):
     """
-    Annotation of variants to genes.
-    Window: bps around TSS.
+    Annotates genetic variants by assigning them to nearby genes based on their genomic positions.
+    This function identifies genes that are within a specified window (in base pairs) 
+    around the transcription start site (TSS) of each variant. It returns a DataFrame 
+    containing the variants annotated with the corresponding gene information.
+    Args:
+        variants (pd.DataFrame): A DataFrame containing variant information. 
+            Expected columns include:
+                - 'chr': Chromosome of the variant.
+                - 'pos': Position of the variant on the chromosome.
+        genes (pd.DataFrame): A DataFrame containing gene information. 
+            Expected columns include:
+                - 'chr': Chromosome of the gene.
+                - 'start': Start position of the gene.
+                - 'end': End position of the gene.
+                - 'name': Name of the gene.
+                - 'strand': Strand of the gene ('+' or '-').
+                - 'feature': Feature type (e.g., 'gene').
+        window (int, optional): The number of base pairs around the TSS to consider 
+            for assigning variants to genes. Defaults to 2000.
+    Returns:
+        pd.DataFrame: A DataFrame containing the annotated variants. 
+            Includes all original columns from the `variants` DataFrame, 
+            with additional columns:
+                - 'gene': Name of the assigned gene.
+                - 'strand': Strand of the assigned gene.
     """
 
     assigned_variants = []

@@ -6,7 +6,12 @@ from torch_geometric.data import Dataset
 
 class IsoAbundanceDataset(Dataset):
     """
-    Custom dataset for isoform abundance prediction.
+    A custom PyTorch Geometric dataset for isoform abundance prediction.
+
+    This dataset is designed to handle data related to isoform abundance,
+    loading it from a specified file and providing access to individual
+    data samples. The data is expected to be preprocessed and stored as
+    a list of PyTorch tensors or data objects in a file.
     """
     def __init__(self, root, file_name, transform=None, pre_transform=None):
         super(IsoAbundanceDataset, self).__init__(root, transform, pre_transform)

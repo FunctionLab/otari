@@ -9,7 +9,21 @@ REVERSE_COMPLEMENT = str.maketrans('ATCG', 'TAGC')
 
 
 def get_genomic_seq(chrom, strand, start, end, mutate_pos = [], mutate_base = []):
-    # mutation position is 0-based
+    """
+    Retrieve a genomic sequence from a specified chromosome and region, with optional mutations.
+
+    Args:
+        chrom (str): The chromosome name from which to fetch the sequence.
+        strand (str): The strand orientation, either '+' for forward or '-' for reverse.
+        start (int): The 0-based start position of the genomic region (inclusive).
+        end (int): The 0-based end position of the genomic region (exclusive).
+        mutate_pos (list of int, optional): A list of 0-based positions within the region to mutate.
+        mutate_base (list of str, optional): A list of bases corresponding to the positions in `mutate_pos`.
+
+    Returns:
+        str: The genomic sequence from the specified region, with mutations applied if provided.
+                If the strand is '-', the reverse complement of the sequence is returned.
+    """
     seq = FASTA_FILE_OBJ.fetch(chrom, start, end).upper()
     if len(mutate_pos) > 0:
         seq = list(seq)
@@ -34,7 +48,6 @@ class Genome:
         self.INDEX_TO_LATIN = {0: '\x01', 1: '\x02', 2: '\x03', 3: '\x04'}
 
     def get_sequence_from_coords(self, chrom, start, end, strand, mutate_pos = [], mutate_base = [], pad = False):
-        # get genomic sequence from start to end (0-based)
         start_pad, end_pad = 0, 0
         if pad:
             chr_len = self.genome.get_reference_length(chrom)
@@ -52,7 +65,6 @@ class Genome:
             mutate_pos = [mutate_pos]
             mutate_base = [mutate_base]
 
-        # mutation position is 0-based
         if mutate_pos is not None and len(mutate_pos) > 0:
             seq = list(seq)
             for pos, base in zip(mutate_pos, mutate_base):
