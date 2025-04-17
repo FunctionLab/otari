@@ -12,6 +12,7 @@ from utils.utils import assign_to_genes
 from get_variant_node_embeddings import main, read_gtf
 from preprocess.preprocess_data import convert_edges
 from utils.genome_utils import Genome
+from model.otari import Otari
 
 
 def QC_variants(variants):
@@ -88,10 +89,18 @@ def reformat_graph(embed, transcript_id, gene_id, transcript_variant_identifiers
     df = pd.DataFrame(edges, columns=['Node1', 'Node2'])
     df = df.drop_duplicates()
     edge_idx = convert_edges(df)
+    batch_idx = torch.zeros(x.shape[0], dtype=torch.long)
+
+    # send to device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    x = x.to(device)
+    edge_idx = edge_idx.to(device)
+    batch_idx = batch_idx.to(device)
 
     graph_data = Data(
         x=x, 
         edge_index=edge_idx, 
+        batch_idx=batch_idx,
         transcript_id=transcript_id, 
         identifiers=transcript_variant_identifiers['identifiers'],
         gene_id=gene_id,
@@ -139,22 +148,26 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     print(f'Variant count after QC: {variants.shape[0]}')
 
     if annotate:
-        genes = pd.read_csv('/mnt/home/alitman/ceph/Genome_Annotation_Files_hg38/gencode.v47.basic.annotation.clean.gtf', sep='\t')
+        genes = pd.read_csv('../ceph/otari/resources/gencode.v47.basic.annotation.clean.gtf.gz', sep='\t')
         variants = assign_to_genes(variants, genes)
         print(f'Variant count after annotation: {variants.shape[0]}')
 
-    with open('resources/gene2transcripts.pkl', 'rb') as file:
+    with open('../ceph/otari/resources/gene2transcripts.pkl', 'rb') as file:
         gene2transcripts = rick.load(file)
-    with open('resources/transcript2gene.pkl', 'rb') as file:
+    with open('../ceph/otari/resources/transcript2gene.pkl', 'rb') as file:
         transcript2gene = rick.load(file)
 
     # load model
-    model = torch.load(model_path)
+    model = Otari()  # Same model architecture
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    state_dict = torch.load(model_path, map_location=device)
+    model.load_state_dict(state_dict)
+    model.to(device)
     model.eval()
 
     # load gtf reader and Genome object
     gtf_reader = read_gtf()
-    genome = Genome('resources/hg38.fa')
+    genome = Genome('../ceph/otari/resources/hg38.fa')
 
     tissue_names = ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
     
@@ -200,6 +213,7 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
             # compute most impacted node and features
             most_impacted_node = int(np.argmax(np.sum(np.abs(alt_norm - ref_norm), axis=1)))
             top_features = np.argsort(np.abs(alt_norm[most_impacted_node] - ref_norm[most_impacted_node]))[::-1][:10]
+            top_features = list(top_features)
             
             interpretability_vec = [variant, gene, tid, most_impacted_node, top_features]
             interpretability_df.append(interpretability_vec)
@@ -208,8 +222,8 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
             node_embed_dictionary[variant][tid] = alt_norm[most_impacted_node]
 
             with torch.no_grad():
-                pred_ref, _ = model.make_prediction(ref_graph)
-                pred_alt, _ = model.make_prediction(alt_graph)
+                pred_ref = model(ref_graph)
+                pred_alt = model(alt_graph)
                 pred_ref = pred_ref.squeeze(0).cpu().detach().numpy()
                 pred_alt = pred_alt.squeeze(0).cpu().detach().numpy()                
 
@@ -229,11 +243,6 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     variant_effects_df = pd.DataFrame(variant_effects_df, columns=cols)
     variant_effects_df.to_csv(os.path.join(output_path, 'variant_effects_comprehensive.tsv'), sep='\t', index=False)
 
-    # take max absolute effect per variant across transcripts
-    variant_effects_df = variant_effects_df.drop(columns=['transcript_id'])
-    variant_effects_df = variant_effects_df.groupby('variant_id').abs().max()
-    variant_effects_df.to_csv(os.path.join(output_path, 'max_variant_effects_across_transcripts.tsv'), sep='\t', index=True)
-
     # interpretability df
     interpretability_df = pd.DataFrame(interpretability_df, columns=['variant_id', 'gene_id', 'transcript_id', 'most_affected_node', 'top_features'])
     interpretability_df.to_csv(os.path.join(output_path, 'interpretability_analysis.tsv'), sep='\t', index=False)
@@ -252,7 +261,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_path):
         os.makedirs(args.output_path)
 
-    model_path = 'resources/otari.pth'
+    model_path = '../ceph/otari/resources/otari.pth'
     
     predict_variant_effects(model_path, args.variant_path, args.output_path, annotate=args.annotate)
-    print('Variant effect prediction completed.')
+    print('Otari variant effect prediction completed.')

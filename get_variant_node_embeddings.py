@@ -28,8 +28,8 @@ def read_gtf():
         GTFReader: An instance of the GTFReader initialized with the provided GTF
         and genome file paths.
     """
-    gtf_path = 'resources/gencode.v47.basic.annotation.gtf'
-    genome_path = 'resources/hg38.fa'
+    gtf_path = '../ceph/otari/resources/gencode.v47.basic.annotation.gtf'
+    genome_path = '../ceph/otari/resources/hg38.fa'
     gtf_reader = GTFReader(gtf_path, genome_path = genome_path, add_splice_site = True)
     return gtf_reader
 

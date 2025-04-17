@@ -12,7 +12,7 @@ class ConvSplice_predictor:
         self.use_cuda = use_cuda
         self.batch_size = 64
 
-        self.model_weights = [os.path.join(CWD_DIR, '../resources/model_weights/ConvSplice_model_{}.pt'.format(i + 1)) for i in range(5)]
+        self.model_weights = [os.path.join(CWD_DIR, '../../ceph/otari/resources/model_weights/ConvSplice_model_{}.pt'.format(i + 1)) for i in range(5)]
         self.models = [self.load_model(model_path) for model_path in self.model_weights]
 
     def load_model(self, model_path):   

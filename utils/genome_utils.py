@@ -2,9 +2,10 @@ from tqdm import tqdm
 from pysam import FastaFile
 import pandas as pd
 import numpy as np
+import gzip
 
 
-FASTA_FILE_OBJ = FastaFile('../resources/hg38.fa')
+FASTA_FILE_OBJ = FastaFile('../ceph/otari/resources/hg38.fa')
 REVERSE_COMPLEMENT = str.maketrans('ATCG', 'TAGC')
 
 
@@ -220,6 +221,7 @@ class GTFReader:
     def read_gtf(self):
         gtf_file_line = self.count_file_line(self.gtf_path)
         fp = open(self.gtf_path)
+        # fp = gzip.open(self.gtf_path, 'rt')
         for line in tqdm(fp, total = gtf_file_line, desc = 'Reading GTF file'):
             if line.startswith('#'):
                 continue

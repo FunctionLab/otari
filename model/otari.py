@@ -52,77 +52,50 @@ class GNN_Block(nn.Module):
         return x
 
 
-class IsoAbundanceModel(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_tissues, num_heads, dp, dp_rate_linear=0.5):
-        """
-        Initializes the IsoAbundanceModel.
-        Args:
-            in_channels (int): Number of input channels for the model.
-            hidden_channels (int): Number of hidden channels for intermediate layers.
-            num_tissues (int): Number of output classes or tissues.
-            num_heads (int): Number of attention heads for the GNN blocks.
-            dp (float): Dropout rate for the GNN blocks.
-            dp_rate_linear (float, optional): Dropout rate for the linear layers in the head. Defaults to 0.5.
-        Attributes:
-            IsoGNNModel1 (GNN_Block): First GNN block with specified input and output channels.
-            IsoGNNModel2 (GNN_Block): Second GNN block with reduced output channels.
-            IsoGNNModel3 (GNN_Block): Third GNN block with further reduced output channels.
-            linear1 (nn.Linear): Linear layer mapping input channels to hidden channels.
-            linear2 (nn.Linear): Linear layer mapping hidden channels to half of hidden channels.
-            linear3 (nn.Linear): Linear layer mapping half of hidden channels to a quarter of hidden channels.
-            layernorm1 (nn.LayerNorm): Layer normalization for the first hidden layer.
-            layernorm2 (nn.LayerNorm): Layer normalization for the second hidden layer.
-            layernorm3 (nn.LayerNorm): Layer normalization for the third hidden layer.
-            dropout (nn.Dropout): Dropout layer with a fixed rate of 0.3.
-            head (nn.Sequential): Sequential model for the final classification head, consisting of dropout, 
-                                  linear layers, ReLU activation, and another dropout layer.
-        """
-
-        super(IsoAbundanceModel, self).__init__()
+class Otari(nn.Module):
+    def __init__(self, dp_rate_linear=0.5):
+        super(Otari, self).__init__()
         
-        self.IsoGNNModel1 = GNN_Block(in_channels, hidden_channels, hidden_channels, num_heads, dp_rate=dp)
-        self.IsoGNNModel2 = GNN_Block(hidden_channels, hidden_channels // 2, hidden_channels // 2, num_heads, dp_rate=dp)
-        self.IsoGNNModel3 = GNN_Block(hidden_channels // 2, hidden_channels // 4, hidden_channels // 4, num_heads, dp_rate=dp)
+        self.IsoGNNModel1 = GNN_Block(23600, 512, 512, 2, dp_rate=0.5)
+        self.IsoGNNModel2 = GNN_Block(512, 512 // 2, 512 // 2, 2, dp_rate=0.5)
+        self.IsoGNNModel3 = GNN_Block(512 // 2, 512 // 4, 512 // 4, 2, dp_rate=0.5)
         
-        self.linear1 = nn.Linear(in_channels, hidden_channels)
-        self.linear2 = nn.Linear(hidden_channels, hidden_channels // 2)
-        self.linear3 = nn.Linear(hidden_channels // 2, hidden_channels // 4)
+        self.linear1 = nn.Linear(23600, 512)
+        self.linear2 = nn.Linear(512, 512 // 2)
+        self.linear3 = nn.Linear(512 // 2, 512 // 4)
         
-        self.layernorm1 = nn.LayerNorm(hidden_channels)
-        self.layernorm2 = nn.LayerNorm(hidden_channels // 2)
-        self.layernorm3 = nn.LayerNorm(hidden_channels // 4)
+        self.layernorm1 = nn.LayerNorm(512)
+        self.layernorm2 = nn.LayerNorm(512 // 2)
+        self.layernorm3 = nn.LayerNorm(512 // 4)
 
         self.dropout = nn.Dropout(0.3)
         
         self.head = nn.Sequential(
             nn.Dropout(dp_rate_linear),
-            nn.Linear(hidden_channels // 4, hidden_channels // 4),
+            nn.Linear(512 // 4, 512 // 4),
             nn.ReLU(),
             nn.Dropout(dp_rate_linear),
-            nn.Linear(hidden_channels // 4, num_tissues)
+            nn.Linear(512 // 4, 30)
         )
 
-    def forward(self, x, edge_index, batch_idx):
-        # First GNN block
-        x1 = self.IsoGNNModel1(x, edge_index)
-        x1 = self.layernorm1(x1)
+    def forward(self, batch):
+        out1 = self.IsoGNNModel1(batch.x, batch.edge_index)
+        lout1 = self.layernorm1(out1)
 
-        # Second GNN block with residual connection
-        x2 = self.IsoGNNModel2(x1, edge_index)
-        x2 = x2 + self.linear2(x1)
-        x2 = self.layernorm2(x2)
+        out2 = self.IsoGNNModel2(lout1, batch.edge_index)
+        rout2 = out2 + self.linear2(lout1)  # Residual connection
+        lout2 = self.layernorm2(rout2)
 
-        # Third GNN block with residual connection
-        x3 = self.IsoGNNModel3(x2, edge_index)
-        x3 = x3 + self.linear3(x2)
-        x3 = self.layernorm3(x3)
+        out3 = self.IsoGNNModel3(lout2, batch.edge_index)
+        rout3 = out3 + self.linear3(lout2)  # Residual connection
+        lout3 = self.layernorm3(rout3)
         
         # Global pooling and output head
-        x3 = global_max_pool(x3, batch_idx)
-        x3 = self.dropout(x3)
-        x3 = self.head(x3)
+        outpool = global_max_pool(lout3, batch.batch_idx)
+        outpool = self.dropout(outpool)
+        predict = self.head(outpool)
         
-        return x3
+        return predict
 
 
 class IsoAbundanceGNN(pl.LightningModule):    
@@ -163,7 +136,7 @@ class IsoAbundanceGNN(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.model = IsoAbundanceModel(in_channels, hidden_channels, num_tissues, num_heads, dp_rate)
+        self.model = Otari()
         
         wandb.init(project='otari', name='otari', dir='./otari')
         model_architecture = str(self.model)
