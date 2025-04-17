@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import pickle as rick
 from torch_geometric.data import Data
+import pytorch_lightning as pl
 
 from utils.utils import assign_to_genes
 from get_variant_node_embeddings import main, read_gtf
@@ -142,6 +143,7 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
         - Tissue-specific scores are calculated as log2 fold changes between 
           alternative and reference predictions.
     """
+    pl.seed_everything(42, workers=True)
 
     variants = pd.read_csv(variant_path, sep='\t') # .tsv with columns: chr, pos, ref, alt
     variants = QC_variants(variants)
