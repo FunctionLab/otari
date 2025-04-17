@@ -77,13 +77,10 @@ def reformat_graph(embed, transcript_id, gene_id, transcript_variant_identifiers
     """
 
     edges = [] 
-    segment_ids = transcript_variant_identifiers['segment_id']
-    exon_indices = [i for i, x in enumerate(segment_ids) if x == b'e']
     for j in range(len(embed)-1):
         seg1 = j
         seg2 = j+1
-        if seg1 in exon_indices and seg2 in exon_indices:
-            edges.append((seg1, seg2))
+        edges.append((seg1, seg2))
 
     # create data object with x, edge_index, and y
     x = torch.tensor(embed, dtype=torch.float)
@@ -153,7 +150,7 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
         genes = pd.read_csv('../ceph/otari/resources/gencode.v47.basic.annotation.clean.gtf.gz', sep='\t')
         variants = assign_to_genes(variants, genes)
         print(f'Variant count after annotation: {variants.shape[0]}')
-
+    
     with open('../ceph/otari/resources/gene2transcripts.pkl', 'rb') as file:
         gene2transcripts = rick.load(file)
     with open('../ceph/otari/resources/transcript2gene.pkl', 'rb') as file:
@@ -181,7 +178,7 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
         print(f'Processing variant {i+1}/{variants.shape[0]}')   
         transcript_ids = []
         transcript_ids.extend(gene2transcripts[str(variant['gene'])])
-
+        
         # update node attributes
         transcript_variant_embeddings, transcript_variant_identifiers = main(transcript_ids, variant, gtf_reader, genome)
         
@@ -195,7 +192,7 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
             
             ref_embed = transcript_variant_embeddings[tid][ref_key]
             alt_embed = transcript_variant_embeddings[tid][alt_key]
-
+            
             variant = alt_key
 
             # convert to graphs
@@ -221,11 +218,12 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
             interpretability_df.append(interpretability_vec)
 
             # save node embeddings of most impacted node
-            node_embed_dictionary[variant][tid] = alt_norm[most_impacted_node]
+            node_embed_dictionary[variant][tid] = alt_norm[most_impacted_node] - ref_norm[most_impacted_node]
 
             with torch.no_grad():
                 pred_ref = model(ref_graph)
                 pred_alt = model(alt_graph)
+                
                 pred_ref = pred_ref.squeeze(0).cpu().detach().numpy()
                 pred_alt = pred_alt.squeeze(0).cpu().detach().numpy()                
 
@@ -244,7 +242,7 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     cols.extend(tissue_names)
     variant_effects_df = pd.DataFrame(variant_effects_df, columns=cols)
     variant_effects_df.to_csv(os.path.join(output_path, 'variant_effects_comprehensive.tsv'), sep='\t', index=False)
-
+    
     # interpretability df
     interpretability_df = pd.DataFrame(interpretability_df, columns=['variant_id', 'gene_id', 'transcript_id', 'most_affected_node', 'top_features'])
     interpretability_df.to_csv(os.path.join(output_path, 'interpretability_analysis.tsv'), sep='\t', index=False)

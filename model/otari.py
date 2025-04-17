@@ -81,7 +81,7 @@ class Otari(nn.Module):
     def forward(self, batch):
         out1 = self.IsoGNNModel1(batch.x, batch.edge_index)
         lout1 = self.layernorm1(out1)
-
+        
         out2 = self.IsoGNNModel2(lout1, batch.edge_index)
         rout2 = out2 + self.linear2(lout1)  # Residual connection
         lout2 = self.layernorm2(rout2)
