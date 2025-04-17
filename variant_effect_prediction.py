@@ -200,9 +200,8 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
             alt_graph = reformat_graph(alt_embed, tid, gene, transcript_variant_identifiers[tid][alt_key])
 
             # z-score normalization across features and graphs
-            combined_graph = torch.cat((ref_graph.x, alt_graph.x), dim=0)
-            means = torch.mean(combined_graph, dim=0)
-            stes = torch.std(combined_graph, dim=0)
+            means = torch.mean(ref_graph.x, dim=0)
+            stes = torch.std(ref_graph.x, dim=0)
             epsilon = 1e-8 
             alt_norm = (alt_graph.x - means) / (stes + epsilon)
             ref_norm = (ref_graph.x - means) / (stes + epsilon)
