@@ -48,7 +48,6 @@ Arguments:
 
 Expected outputs:
 -  `variant_effects_comprehensive.tsv`: variant effect prediction for every isoform and tissue. Includes `max_effect` and `mean_effect` across tissues. 
-- `max_variant_effects_across_transcripts.tsv`: variant effects aggregated by gene (max effect isoform for each gene and tissue).
 - `interpretability_analysis.tsv`: interpretability metrics including most impacted node and features.
 - `variant_to_most_affected_node_embedding.pkl`: node sequence attributes for the most impacted node for each variant and transcript.
 
