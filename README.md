@@ -20,21 +20,20 @@ conda activate otari
 
 ### Setup
 
-Please download and extract the trained Otari model, ConvSplice, Sei, and Seqweaver weights, as well as `resources` (containing hg38 FASTA files, GENCODE annotations, pickle files, node sequence attributes, transcript datasets) before proceeding:
+Please download and extract the `resources` subdirectory containing the Otari model weights, ConvSplice, Sei, and Seqweaver model weights, hg38 FASTA files, GENCODE annotations, pickle files, node sequence attributes, transcript datasets and more before proceeding:
 
 ```
 sh ./download_data.sh
 ```
 
-- [Otari model](https://doi.org/10.5281/zenodo.4906996)
+- [Otari model weights only](https://doi.org/10.5281/zenodo.4906996)
 - [Otari framework `resources` directory](https://doi.org/10.5281/zenodo.4906961)
-- Model weights for `predictors` including ConvSplice, Sei, and Seqweaver should be downloaded as well(link)
 
 
 ### Variant effect prediction
 
 1. The following scripts can be used to obtain Otari variant effects at the isoform level (must run on a GPU node):
-(1) `variant_effect_prediction.py` (and corresponding bash script, `variant_effect_prediction.sh`): Accepts a .tsv variant file as input and makes variant effect predictions.
+(1) `variant_effect_prediction.py` (and corresponding bash script, `variant_effect_prediction.sh`): Accepts a `.tsv` or `.vcf` variant file as input and makes variant effect predictions.
 
 Example usage:
 ```
@@ -42,31 +41,37 @@ sh variant_effect_prediction.sh <input-file> <output-dir> --annotate --visualize
 ```
 
 Arguments:
-- `<input-file>`: .tsv input file with variants. Format must be `chr \t pos \t ref \t alt`
+- `<input-file>`: `.tsv` or `.vcf` input file with variants. tsv format must be `chr \t pos \t ref \t alt`.
 - `<output-dir>`: Path to output directory (will be created if does not exist)
 - `--annotate`: boolean True or False (default is True). Annotate should only be set to false if variants are already annotated to genes and strands (make sure the genes column is called `genes`).
 - `--visualize`: boolean True or False (default is False). Visualize tissue-specific variant effects, transcript splice structures, and most affected nodes. .png files saved to `<output-dir>/figures`. 
 
 Expected outputs:
--  `variant_effects_comprehensive.tsv`: variant effect prediction for every isoform and tissue. Includes `max_effect` and `mean_effect` across tissues. 
+-  `variant_effects_comprehensive.tsv`: variant effect prediction for every isoform and tissue. Includes `max_effect` and `mean_effect` (absolute effects) across tissues. 
 - `interpretability_analysis.tsv`: interpretability metrics including most impacted node and features.
 - `variant_to_most_affected_node_embedding.pkl`: node sequence attributes for the most impacted node for each variant and transcript.
 - `figures/` containing variant effects and transcript structures.
 
 ### Example variant effect prediction run
 
-We provide `test.tsv` (hg38 coordinates) so you can try running this command once you have installed all the requirements. Additionally, `example_slurm_scripts` contains example scripts with the same expected input arguments if you need to submit your job to a compute cluster. 
+We provide `test.tsv` and `test.vcf` (hg38 coordinates) as examples so you can try running Otari VEP once you have installed all the requirements. 
 
-Example command run on GPU:
+Example command run on a GPU node:
 ```
-sh variant_effect_prediction.sh test.tsv ./test_outputs --annotate --visualize
+sh variant_effect_prediction.sh test.vcf ./test_outputs --annotate --visualize
 ```
+
+Alternatively, submit as a job to slurm (make sure CUDA is available):
+```
+sbatch variant_effect_prediction.sh test.vcf ./test_outputs --annotate --visualize
+```
+log will be available in the `logfiles` subdirectory.
 
 ## Training
 
-The configuration file and script for running train is under the `train` directory. To run Otari model training, you will need GPU computing capability (we ran training on 1x Nvidia A100 GPU). 
+The configuration files and scripts for training Otari are under the `train` directory. To run Otari model training, you will need GPU computing capability (we ran training on 1x Nvidia A100 GPU for ~8 hours). 
 
-The training data is available [here](https://doi.org/10.5281/zenodo.4907037) and should be downloaded and extracted into the `resources` directory. 
+The training data is available [here](https://doi.org/10.5281/zenodo.4907037) and is downloaded and extracted as part of the `resources` directory. 
 
 ```
 cd ./train
@@ -77,7 +82,7 @@ The Otari training configuration YAML file is provided as the `train/configs.yml
 
 We provide an example SLURM script `train/train.sh` for submitting a training job to a cluster. To preprocess the data and train the model from scratch, run the following scripts in order:
 ```
-sh preprocess/preprocess_data.sh resources/espresso.txt 'espresso' <output_dir>
+sbatch preprocess/preprocess_data.sh resources/ESPRESSO_isoform_data.tsv.gz 'espresso' <output_dir>
 sh train/train.sh
 ```
 
