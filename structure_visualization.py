@@ -77,7 +77,7 @@ def _plot_gene_structure(gene_id, gtf_reader, colors, most_affected_nodes, var_p
     return fig, ax
 
 
-def plot_transcript_structures(gene_id, colors, save_path, most_affected_nodes=None, var_pos=None):
+def plot_transcript_structures(gtf_reader, gene_id, colors, save_path, most_affected_nodes=None, var_pos=None):
     """
     This function visualizes the structure of a gene and highlights the most 
     affected nodes for the specified transcripts. The plot is saved to the 
@@ -89,11 +89,7 @@ def plot_transcript_structures(gene_id, colors, save_path, most_affected_nodes=N
         most_affected_nodes (dict, optional): A dictionary mapping transcript IDs to their most affected nodes. 
             Defaults to None.
         var_pos (int, optional): The position of a variant to be highlighted on the plot. Defaults to None.
-    """
-
-    gtf_path = '/mnt/home/alitman/ceph/Genome_Annotation_Files_hg38/gencode.v47.basic.annotation.gtf'
-    gtf_reader = GTFReader(gtf_path, True)
-    
+    """    
     fig, ax = _plot_gene_structure(gene_id, gtf_reader, colors, most_affected_nodes, var_pos)
     ax.set_xlim(gtf_reader.get_gene(gene_id).start - 1000, gtf_reader.get_gene(gene_id).end + 1000)
     ax.ticklabel_format(useOffset=False, style='plain')

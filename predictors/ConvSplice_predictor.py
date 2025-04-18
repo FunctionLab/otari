@@ -1,10 +1,13 @@
 import os
+
 import numpy as np
 from tqdm import tqdm
 import torch
+
 from .models.ConvSpliceModel import ConvSplice
 
 CWD_DIR = os.path.dirname(os.path.realpath(__file__))
+
 
 class ConvSplice_predictor:
     def __init__(self, genome, use_cuda = False):

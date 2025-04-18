@@ -1,4 +1,6 @@
 import os
+import gzip
+import io
 import random
 import argparse
 from collections import defaultdict
@@ -165,14 +167,18 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     # load model
     model = Otari()  # Same model architecture
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    state_dict = torch.load(model_path, map_location=device)
+    
+    with gzip.open(model_path, 'rb') as f:
+        buffer = io.BytesIO(f.read())
+        state_dict = torch.load(buffer, map_location=device)
+    
     model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
 
     # load gtf reader and Genome object
     gtf_reader = read_gtf()
-    genome = Genome('../ceph/otari/resources/hg38.fa')
+    genome = Genome('../ceph/otari/resources/hg38.fa.gz')
 
     tissue_names = ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
     
@@ -255,8 +261,10 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     with open(os.path.join(output_path, f'variant_to_most_affected_node_embedding.pkl'), 'wb') as f:
         rick.dump(node_embed_dictionary, f)
 
+    return gtf_reader
+
     
-def visualize_results(output_path):
+def visualize_results(gtf_reader, output_path):
     """
     Visualizes the results of variant effect predictions and interpretability analysis.
     This function generates and saves plots for tissue-specific variant effects and 
@@ -286,20 +294,15 @@ def visualize_results(output_path):
     for variant_name in variant_ids:
         vep = variant_effects_df.loc[variant_effects_df['variant_id'] == variant_name]
         num_transcripts = len(vep)
-        # colors = [cm.rainbow(random.random()) for _ in range(num_transcripts)]
         colors = get_distinct_colors(num_transcripts, colormap=cm.rainbow)
 
         # plot tissue-specific variant effects
         _, ax = plt.subplots(1, 1, figsize=(9.5, 5))
-        # for i, row in vep.iterrows():
-        #     for j, tissue in enumerate(tissue_names):
-        #         ax.scatter(j, row[tissue], color=colors[i], s=80, alpha=0.8)
-        #     sns.lineplot(x=tissue_names, y=row[tissue_names], color=colors[i])
         for i, row in enumerate(vep.itertuples(index=False)):
             y_vals = [getattr(row, tissue) for tissue in tissue_names]
             ax.scatter(range(len(tissue_names)), y_vals, color=colors[i], s=80, alpha=0.8)
             ax.plot(range(len(tissue_names)), y_vals, color=colors[i], alpha=0.6)
-        ax.set_ticks(range(len(tissue_names)))
+        ax.set_xticks(np.arange(30))
         ax.set_xticklabels(tissue_names, rotation=90)
         ax.set_ylabel('log2 fold change', fontsize=13.5)
         ax.set_xlabel('Tissues', fontsize=12)
@@ -329,6 +332,7 @@ def visualize_results(output_path):
         else:
             gene_id = gene_id[0]
         plot_transcript_structures(
+                                   gtf_reader,
                                    gene_id, 
                                    colors, 
                                    save_path = f'{output_path}/figures/variant_structure_{variant_name}.png',
@@ -349,11 +353,11 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(args.output_path, 'figures')):
         os.makedirs(os.path.join(args.output_path, 'figures'))
 
-    model_path = '../ceph/otari/resources/otari.pth'
+    model_path = '../ceph/otari/resources/otari.pth.gz'
     
-    predict_variant_effects(model_path, args.variant_path, args.output_path, annotate=args.annotate)
+    gtf_reader = predict_variant_effects(model_path, args.variant_path, args.output_path, annotate=args.annotate)
 
     if args.visualize:
-        visualize_results(args.output_path)
+        visualize_results(gtf_reader, args.output_path)
 
     print('Otari variant effect prediction completed! Results saved to:', args.output_path)

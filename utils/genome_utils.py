@@ -1,11 +1,13 @@
+import gzip
+
 from tqdm import tqdm
 from pysam import FastaFile
 import pandas as pd
 import numpy as np
-import gzip
 
 
-FASTA_FILE_OBJ = FastaFile('../ceph/otari/resources/hg38.fa')
+# Load the hg38 genome sequence
+FASTA_FILE_OBJ = FastaFile('../ceph/otari/resources/hg38.fa.gz')
 REVERSE_COMPLEMENT = str.maketrans('ATCG', 'TAGC')
 
 
@@ -188,7 +190,7 @@ class GTFReader:
         return self.genes[gene_id]
 
     def count_file_line(self, f_path):
-        with open(f_path) as f:
+        with gzip.open(f_path, 'rt') as f:
             return sum(1 for _ in f)
     
     def get_id_map(self):
@@ -220,8 +222,7 @@ class GTFReader:
                 
     def read_gtf(self):
         gtf_file_line = self.count_file_line(self.gtf_path)
-        fp = open(self.gtf_path)
-        # fp = gzip.open(self.gtf_path, 'rt')
+        fp = gzip.open(self.gtf_path, 'rt')
         for line in tqdm(fp, total = gtf_file_line, desc = 'Reading GTF file'):
             if line.startswith('#'):
                 continue

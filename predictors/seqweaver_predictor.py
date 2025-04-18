@@ -1,15 +1,16 @@
+import os
+
+import numpy as np
+from tqdm import tqdm
 from selene_sdk.predict import AnalyzeSequences
 from selene_sdk.predict._common import predict as sdk_predict
 from selene_sdk.utils import load_features_list
-import numpy as np
-from tqdm import tqdm
-
-
 from selene_sdk.sequences.genome import Genome
+
 from .models.seqweaver import Seqweaver
-import os
 
 CWD_DIR = os.path.dirname(os.path.realpath(__file__))
+
 
 class SeqweaverPredictor:
     def __init__(self, genome, use_cuda = False):

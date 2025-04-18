@@ -1,16 +1,18 @@
+import os
+
+import numpy as np
+from tqdm import tqdm
+import pandas as pd
 from selene_sdk.predict import AnalyzeSequences
 from selene_sdk.utils import NonStrandSpecific
 from selene_sdk.predict._common import predict as sdk_predict
 from selene_sdk.utils import load_features_list
-import numpy as np
-from tqdm import tqdm
-import pandas as pd
-
 from selene_sdk.sequences.genome import Genome
+
 from .models.sei import Sei
-import os
 
 CWD_DIR = os.path.dirname(os.path.realpath(__file__))
+
 
 class SeiPredictor:
     def __init__(self, genome, strand_specific = False, use_cuda = False):
