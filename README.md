@@ -38,18 +38,20 @@ sh ./download_data.sh
 
 Example usage:
 ```
-sh variant_effect_prediction.sh <input-file> <output-dir> <annotate>
+sh variant_effect_prediction.sh <input-file> <output-dir> --annotate --visualize
 ```
 
 Arguments:
 - `<input-file>`: .tsv input file with variants. Format must be `chr \t pos \t ref \t alt`
 - `<output-dir>`: Path to output directory (will be created if does not exist)
-- `<annotate>`: boolean True or False (default is True). Annotate should only be set to false if variants are already annotated to genes and strands (make sure the genes column is called `genes`). 
+- `--annotate`: boolean True or False (default is True). Annotate should only be set to false if variants are already annotated to genes and strands (make sure the genes column is called `genes`).
+- `--visualize`: boolean True or False (default is False). Visualize tissue-specific variant effects, transcript splice structures, and most affected nodes. .png files saved to `<output-dir>/figures`. 
 
 Expected outputs:
 -  `variant_effects_comprehensive.tsv`: variant effect prediction for every isoform and tissue. Includes `max_effect` and `mean_effect` across tissues. 
 - `interpretability_analysis.tsv`: interpretability metrics including most impacted node and features.
 - `variant_to_most_affected_node_embedding.pkl`: node sequence attributes for the most impacted node for each variant and transcript.
+- `figures/` containing variant effects and transcript structures.
 
 ### Example variant effect prediction run
 
@@ -57,7 +59,7 @@ We provide `test.tsv` (hg38 coordinates) so you can try running this command onc
 
 Example command run on GPU:
 ```
-sh variant_effect_prediction.sh test.tsv ./test_outputs
+sh variant_effect_prediction.sh test.tsv ./test_outputs --annotate --visualize
 ```
 
 ## Training
