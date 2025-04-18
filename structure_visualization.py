@@ -4,7 +4,7 @@ from matplotlib.patches import Rectangle
 from utils.genome_utils_vis import GTFReader
 
 
-def _plot_gene_structure(gene_id, transcript_ids, gtf_reader, colors, most_affected_nodes, var_pos):
+def _plot_gene_structure(gene_id, gtf_reader, colors, most_affected_nodes, var_pos):
     """
     Plots the transcript structures, including exons and optional annotations for variants and affected nodes.
 
@@ -12,8 +12,6 @@ def _plot_gene_structure(gene_id, transcript_ids, gtf_reader, colors, most_affec
     -----------
     gene_id : str
         The identifier of the gene to be visualized.
-    transcript_ids : list of str
-        A list of transcript IDs to include in the visualization.
     gtf_reader : object
         An object that provides access to gene and transcript information, such as start, end, strand, and exons.
     colors : list of str
@@ -38,19 +36,15 @@ def _plot_gene_structure(gene_id, transcript_ids, gtf_reader, colors, most_affec
     """
     gene = gtf_reader.get_gene(gene_id)
     transcripts = gene.transcripts
-    transcripts = {tid: transcripts[tid] for tid in transcript_ids if tid in transcripts}
+    
     fig, ax = plt.subplots(1,1,figsize=(9.5, 4.5))
-
     x_space = (gene.end - gene.start) / 200
     x_axis_size = gene.end - gene.start + 2 * x_space
-
-    transcript_ids = transcript_ids[::-1]
-    colors = colors[::-1]
 
     if var_pos:
         ax.axvline(x=var_pos, color='red', linestyle='--', linewidth=0.9)
 
-    for i, transcript_id in enumerate(transcript_ids):
+    for i, transcript_id in enumerate(transcripts):
         transcript = transcripts[transcript_id]
         if transcript.strand or transcript.strand == b'+':
             exons = transcript.exons
@@ -64,7 +58,7 @@ def _plot_gene_structure(gene_id, transcript_ids, gtf_reader, colors, most_affec
         for idx, exon in enumerate(exons):
             color = colors[i]
             if most_affected_nodes and idx == int(most_affected_nodes[transcript_id]):
-                color = 'red'
+                color = 'yellow'
             ax.add_patch(Rectangle((exon[0], i - 0.35), exon[1] - exon[0], 0.7, color=color, linewidth=4, zorder=2))
             if idx < len(exons) - 1:
                 intron_start = exon[1]
@@ -83,14 +77,13 @@ def _plot_gene_structure(gene_id, transcript_ids, gtf_reader, colors, most_affec
     return fig, ax
 
 
-def plot_transcript_structures(gene_id, transcript_ids, colors, save_path, most_affected_nodes=None, var_pos=None):
+def plot_transcript_structures(gene_id, colors, save_path, most_affected_nodes=None, var_pos=None):
     """
     This function visualizes the structure of a gene and highlights the most 
     affected nodes for the specified transcripts. The plot is saved to the 
     specified file path.
     Args:
         gene_id (str): The ID of the gene to be plotted.
-        transcript_ids (list of str): A list of transcript IDs associated with the gene.
         colors (dict): A dictionary mapping transcript IDs to their respective colors for visualization.
         save_path (str): The file path where the plot will be saved.
         most_affected_nodes (dict, optional): A dictionary mapping transcript IDs to their most affected nodes. 
@@ -101,7 +94,7 @@ def plot_transcript_structures(gene_id, transcript_ids, colors, save_path, most_
     gtf_path = '/mnt/home/alitman/ceph/Genome_Annotation_Files_hg38/gencode.v47.basic.annotation.gtf'
     gtf_reader = GTFReader(gtf_path, True)
     
-    fig, ax = _plot_gene_structure(gene_id, transcript_ids, gtf_reader, colors, most_affected_nodes, var_pos)
+    fig, ax = _plot_gene_structure(gene_id, gtf_reader, colors, most_affected_nodes, var_pos)
     ax.set_xlim(gtf_reader.get_gene(gene_id).start - 1000, gtf_reader.get_gene(gene_id).end + 1000)
     ax.ticklabel_format(useOffset=False, style='plain')
     ax.set_facecolor('white')

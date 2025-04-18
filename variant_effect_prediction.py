@@ -1,4 +1,5 @@
 import os
+import random
 import argparse
 from collections import defaultdict
 
@@ -8,13 +9,18 @@ import numpy as np
 import pickle as rick
 from torch_geometric.data import Data
 import pytorch_lightning as pl
+from matplotlib import pyplot as plt
+import seaborn as sns
+import matplotlib.cm as cm
+import matplotlib.lines as mlines
 
 from utils.utils import assign_to_genes
 from get_variant_node_embeddings import main, read_gtf
 from preprocess.preprocess_data import convert_edges
 from utils.genome_utils import Genome
 from model.otari import Otari
-
+from structure_visualization import plot_transcript_structures
+   
 
 def QC_variants(variants):
     """
@@ -249,18 +255,105 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     with open(os.path.join(output_path, f'variant_to_most_affected_node_embedding.pkl'), 'wb') as f:
         rick.dump(node_embed_dictionary, f)
 
+    
+def visualize_results(output_path):
+    """
+    Visualizes the results of variant effect predictions and interpretability analysis.
+    This function generates and saves plots for tissue-specific variant effects and 
+    transcript structures for each variant. It reads data from the specified output 
+    directory, processes it, and creates visualizations for better understanding of 
+    the variant effects across tissues and the most affected nodes in transcript structures.
+    Args:
+        output_path (str): The path to the directory containing the output files 
+                           ('variant_effects_comprehensive.tsv' and 'interpretability_analysis.tsv') 
+                           and where the generated figures will be saved.
+    Output:
+        - Tissue-specific variant effect scatter plots saved as PNG files in the 
+          'figures' subdirectory of the output path.
+        - Transcript structure plots highlighting the most affected nodes saved as PNG files 
+          in the 'figures' subdirectory of the output path.
+    """
+    
+    variant_effects_df = pd.read_csv(os.path.join(output_path, 'variant_effects_comprehensive.tsv'), sep='\t').drop_duplicates(keep='first')
+    interpretability_df = pd.read_csv(os.path.join(output_path, 'interpretability_analysis.tsv'), sep='\t').drop_duplicates(keep='first')
+    variant_ids = variant_effects_df['variant_id'].unique()
+
+    tissue_names = ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
+
+    def get_distinct_colors(n, colormap=cm.tab20):  # or cm.rainbow
+        return [colormap(i / max(n - 1, 1)) for i in range(n)]
+    
+    for variant_name in variant_ids:
+        vep = variant_effects_df.loc[variant_effects_df['variant_id'] == variant_name]
+        num_transcripts = len(vep)
+        # colors = [cm.rainbow(random.random()) for _ in range(num_transcripts)]
+        colors = get_distinct_colors(num_transcripts, colormap=cm.rainbow)
+
+        # plot tissue-specific variant effects
+        _, ax = plt.subplots(1, 1, figsize=(9.5, 5))
+        # for i, row in vep.iterrows():
+        #     for j, tissue in enumerate(tissue_names):
+        #         ax.scatter(j, row[tissue], color=colors[i], s=80, alpha=0.8)
+        #     sns.lineplot(x=tissue_names, y=row[tissue_names], color=colors[i])
+        for i, row in enumerate(vep.itertuples(index=False)):
+            y_vals = [getattr(row, tissue) for tissue in tissue_names]
+            ax.scatter(range(len(tissue_names)), y_vals, color=colors[i], s=80, alpha=0.8)
+            ax.plot(range(len(tissue_names)), y_vals, color=colors[i], alpha=0.6)
+        ax.set_ticks(range(len(tissue_names)))
+        ax.set_xticklabels(tissue_names, rotation=90)
+        ax.set_ylabel('log2 fold change', fontsize=13.5)
+        ax.set_xlabel('Tissues', fontsize=12)
+        ax.set_title(f'Variant effects for {variant_name}', fontsize=14, pad=10, fontweight='bold')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_linewidth(2)
+        ax.spines['left'].set_linewidth(2)
+        transcript_ids = vep['transcript_id'].values
+        handles = [
+            mlines.Line2D([], [], marker='o', linestyle='-', color=colors[i], markersize=8, label=transcript_ids[i])
+            for i in range(len(transcript_ids))
+        ]
+        ax.legend(handles=handles, title='Transcript ID', fontsize=10, title_fontsize=12, loc='upper left', bbox_to_anchor=(1, 1), frameon=False)
+        plt.tight_layout()
+        plt.savefig(f'{output_path}/figures/variant_effects_{variant_name}.png', dpi=600, bbox_inches='tight')
+        plt.close()
+
+        # plot structure and most affected nodes
+        # most affected nodes will be highlighted in yellow
+        variant_interpret = interpretability_df.loc[interpretability_df['variant_id'] == variant_name]
+        most_affected_nodes = dict(zip(variant_interpret['transcript_id'], variant_interpret['most_affected_node']))
+        most_affected_nodes = {k: int(v) for k, v in most_affected_nodes.items()}
+        gene_id = variant_interpret['gene_id'].mode()
+        if len(gene_id) > 1:
+            gene_id = random.choice(gene_id)
+        else:
+            gene_id = gene_id[0]
+        plot_transcript_structures(
+                                   gene_id, 
+                                   colors, 
+                                   save_path = f'{output_path}/figures/variant_structure_{variant_name}.png',
+                                   most_affected_nodes=most_affected_nodes
+                                   )
+
 
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Predict variant effects on isoform expression.')
     parser.add_argument('--variant_path', type=str, required=True, help='Path to the variant file (tsv).')
     parser.add_argument('--output_path', type=str, required=True, help='Path to the output directory.')
     parser.add_argument('--annotate', action='store_true', default=True, help='Whether to annotate variants to genes.')
+    parser.add_argument('--visualize', action='store_true', default=False, help='Whether to visualize results.')
     args = parser.parse_args()
 
     if not os.path.exists(args.output_path):
         os.makedirs(args.output_path)
+    if not os.path.exists(os.path.join(args.output_path, 'figures')):
+        os.makedirs(os.path.join(args.output_path, 'figures'))
 
     model_path = '../ceph/otari/resources/otari.pth'
     
     predict_variant_effects(model_path, args.variant_path, args.output_path, annotate=args.annotate)
-    print('Otari variant effect prediction completed.')
+
+    if args.visualize:
+        visualize_results(args.output_path)
+
+    print('Otari variant effect prediction completed! Results saved to:', args.output_path)
