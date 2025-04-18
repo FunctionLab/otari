@@ -9,7 +9,7 @@ import pandas as pd
 from predictors.ConvSplice_predictor import ConvSplice_predictor
 from predictors.sei_predictor import SeiPredictor
 from predictors.seqweaver_predictor import SeqweaverPredictor
-from cyvcf2 import VCF
+
 from utils.genome_utils import GTFReader
 
 
@@ -32,39 +32,6 @@ def read_gtf():
     genome_path = '../ceph/otari/resources/hg38.fa.gz'
     gtf_reader = GTFReader(gtf_path, genome_path = genome_path, add_splice_site = True)
     return gtf_reader
-
-
-def read_vcf_tsv(vcf_path):
-    """
-    Reads a VCF file in TSV format and returns its contents as a pandas DataFrame.
-
-    The input file is expected to have the following columns:
-    - chr: Chromosome identifier
-    - pos: Position on the chromosome
-    - ref: Reference allele
-    - alt: Alternate allele
-
-    Args:
-        vcf_path (str): The file path to the VCF TSV file.
-
-    Returns:
-        pandas.DataFrame: A DataFrame containing the VCF data with columns ['chr', 'pos', 'ref', 'alt'].
-    """
-    vcf = pd.read_csv(vcf_path, sep = '\t') # columns: chr, pos, ref, alt
-    return vcf
-
-
-def read_vcf(vcf_path):
-    vcf = VCF(vcf_path, strict_gt = True)
-    return vcf
-
-
-def check_vcf_file(vcf_path):
-    if os.path.exists(vcf_path + '.tbi'):
-        return True
-    sys.stderr.write("\nCould not retrieve index file for '{}'".format(vcf_path))
-    sys.stderr.write("\n- VCF needs to be sorted and index first. \n- Example code: tabix -p vcf example.vcf.gz\n")
-    sys.exit(1)
 
 
 def get_variant_in_region(chrom, region, variant_series):
@@ -367,6 +334,3 @@ def main(transcript_ids, variants, gtf_reader, genome):
 
     return composite_embeddings, composite_identifiers
 
-
-if __name__ == '__main__':
-    main()
