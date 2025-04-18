@@ -150,7 +150,23 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     """
     pl.seed_everything(42, workers=True)
 
-    variants = pd.read_csv(variant_path, sep='\t') # .tsv with columns: chr, pos, ref, alt
+    if variant_path.endswith('.vcf') or variant_path.endswith('.vcf.gz'):
+        vcf_data = pd.read_csv(
+            variant_path, 
+            sep='\t', 
+            comment='#', 
+            header=None, 
+            usecols=range(5)
+        )
+        vcf_data = vcf_data.rename(columns={
+            0: 'chr', 1: 'pos', 3: 'ref', 4: 'alt'
+        })
+        variants = vcf_data[['chr', 'pos', 'ref', 'alt']]
+    elif variant_path.endswith('.tsv'):
+        variants = pd.read_csv(variant_path, sep='\t')
+    else:
+        raise ValueError(f"Unsupported file type: {variant_path}")
+    
     variants = QC_variants(variants)
     print(f'Variant count after QC: {variants.shape[0]}')
 
