@@ -171,13 +171,13 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     print(f'Variant count after QC: {variants.shape[0]}')
 
     if annotate:
-        genes = pd.read_csv('../ceph/otari/resources/gencode.v47.basic.annotation.clean.gtf.gz', sep='\t')
+        genes = pd.read_csv('/mnt/home/alitman/ceph/otari/resources/gencode.v47.basic.annotation.clean.gtf.gz', sep='\t')
         variants = assign_to_genes(variants, genes)
         print(f'Variant count after annotation: {variants.shape[0]}')
     
-    with open('../ceph/otari/resources/gene2transcripts.pkl', 'rb') as file:
+    with open('/mnt/home/alitman/ceph/otari/resources/gene2transcripts.pkl', 'rb') as file:
         gene2transcripts = rick.load(file)
-    with open('../ceph/otari/resources/transcript2gene.pkl', 'rb') as file:
+    with open('/mnt/home/alitman/ceph/otari/resources/transcript2gene.pkl', 'rb') as file:
         transcript2gene = rick.load(file)
 
     # load model
@@ -194,7 +194,7 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
 
     # load gtf reader and Genome object
     gtf_reader = read_gtf()
-    genome = Genome('../ceph/otari/resources/hg38.fa.gz')
+    genome = Genome('/mnt/home/alitman/ceph/otari/resources/hg38.fa.gz')
 
     tissue_names = ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
     
@@ -369,7 +369,7 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(args.output_path, 'figures')):
         os.makedirs(os.path.join(args.output_path, 'figures'))
 
-    model_path = '../ceph/otari/resources/otari.pth.gz'
+    model_path = '/mnt/home/alitman/ceph/otari/resources/otari.pth.gz'
     
     gtf_reader = predict_variant_effects(model_path, args.variant_path, args.output_path, annotate=args.annotate)
 

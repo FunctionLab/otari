@@ -7,7 +7,7 @@ import numpy as np
 
 
 # Load the hg38 genome sequence
-FASTA_FILE_OBJ = FastaFile('../ceph/otari/resources/hg38.fa.gz')
+FASTA_FILE_OBJ = FastaFile('/mnt/home/alitman/ceph/otari/resources/hg38.fa.gz')
 REVERSE_COMPLEMENT = str.maketrans('ATCG', 'TAGC')
 
 
