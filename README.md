@@ -11,16 +11,24 @@ We also provide information and instructions for [how to train the Otari graph n
 
 ### Requirements
 
-Please create a new Anaconda environment specifically for running Otari: 
+To set up an Otari environment, first pull the repository:
+```
+git clone https://github.com/FunctionLab/otari.git
+```
 
+Navigate a terminal into the root of the repository. Next, create an Otari conda environment using python3: 
 ```
 conda env create -n otari -f requirements.yml
+```
+
+Activate the environment:
+```
 conda activate otari
 ```
 
 ### Setup
 
-Please download and extract the `resources` subdirectory containing the Otari model weights, ConvSplice, Sei, and Seqweaver model weights, hg38 FASTA files, GENCODE annotations, pickle files, node sequence attributes, transcript datasets and more before proceeding:
+Please download and extract the `resources` subdirectory into the root directory of Otari. This subdirectory contains the Otari model weights, ConvSplice, Sei, and Seqweaver model weights, hg38 FASTA files, GENCODE annotations, pickle files, node sequence attributes, transcript datasets and more before proceeding:
 
 ```
 sh ./download_data.sh
