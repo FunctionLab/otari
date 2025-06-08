@@ -148,7 +148,7 @@ class IsoAbundanceGNN(pl.LightningModule):
         self.num_tissues = num_tissues
         self.tissues = tissue_names
 
-        # Hard miner and loss for mining examples
+        # Hard example mining
         self.miner = miners.BatchHardMiner()
         self.triplet_loss = nn.TripletMarginLoss()
         

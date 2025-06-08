@@ -17,23 +17,6 @@ CHR_INDEX_DICT = {'1':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9,
   '13':13, '14':14, '15':15, '16':16, '17':17, '18':18, '19':19, '20':20, '21':21, '22':22, 'X':23, 'Y':24}
 
 
-def read_gtf():
-    """
-    Reads a GTF (Gene Transfer Format) file and initializes a GTFReader object.
-
-    This function sets up a GTFReader instance using the specified GTF file and genome
-    file paths. It also enables the addition of splice site information.
-
-    Returns:
-        GTFReader: An instance of the GTFReader initialized with the provided GTF
-        and genome file paths.
-    """
-    gtf_path = '/mnt/home/alitman/ceph/otari/resources/gencode.v47.basic.annotation.gtf.gz'
-    genome_path = '/mnt/home/alitman/ceph/otari/resources/hg38.fa.gz'
-    gtf_reader = GTFReader(gtf_path, genome_path = genome_path, add_splice_site = True)
-    return gtf_reader
-
-
 def get_variant_in_region(chrom, region, variant_series):
     """
     Retrieve variant information if it falls within a specified genomic region.

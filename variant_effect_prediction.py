@@ -22,6 +22,13 @@ from preprocess.preprocess_data import convert_edges
 from utils.genome_utils import Genome
 from model.otari import Otari
 from structure_visualization import plot_transcript_structures
+
+
+TISSUE_NAMES = ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 
+    'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 
+    'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 
+    'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 
+    'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
    
 
 def QC_variants(variants):
@@ -96,8 +103,6 @@ def reformat_graph(embed, transcript_id, gene_id, transcript_variant_identifiers
     df = df.drop_duplicates()
     edge_idx = convert_edges(df)
     batch_idx = torch.zeros(x.shape[0], dtype=torch.long)
-
-    # send to device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     x = x.to(device)
     edge_idx = edge_idx.to(device)
@@ -148,7 +153,6 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
         - Tissue-specific scores are calculated as log2 fold changes between 
           alternative and reference predictions.
     """
-    pl.seed_everything(42, workers=True)
 
     if variant_path.endswith('.vcf') or variant_path.endswith('.vcf.gz'):
         vcf_data = pd.read_csv(
@@ -171,13 +175,13 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     print(f'Variant count after QC: {variants.shape[0]}')
 
     if annotate:
-        genes = pd.read_csv('/mnt/home/alitman/ceph/otari/resources/gencode.v47.basic.annotation.clean.gtf.gz', sep='\t')
+        genes = pd.read_csv('resources/gencode.v47.basic.annotation.clean.gtf.gz', sep='\t')
         variants = assign_to_genes(variants, genes)
         print(f'Variant count after annotation: {variants.shape[0]}')
     
-    with open('/mnt/home/alitman/ceph/otari/resources/gene2transcripts.pkl', 'rb') as file:
+    with open('resources/gene2transcripts.pkl', 'rb') as file:
         gene2transcripts = rick.load(file)
-    with open('/mnt/home/alitman/ceph/otari/resources/transcript2gene.pkl', 'rb') as file:
+    with open('resources/transcript2gene.pkl', 'rb') as file:
         transcript2gene = rick.load(file)
 
     # load model
@@ -194,10 +198,8 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
 
     # load gtf reader and Genome object
     gtf_reader = read_gtf()
-    genome = Genome('/mnt/home/alitman/ceph/otari/resources/hg38.fa.gz')
+    genome = Genome('resources/hg38.fa.gz')
 
-    tissue_names = ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
-    
     # store variant effects
     variant_effects_df = []
     interpretability_df = []
@@ -208,7 +210,9 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
         transcript_ids.extend(gene2transcripts[str(variant['gene'])])
         
         # update node attributes
-        transcript_variant_embeddings, transcript_variant_identifiers = main(transcript_ids, variant, gtf_reader, genome)
+        transcript_variant_embeddings, transcript_variant_identifiers = main(
+            transcript_ids, variant, gtf_reader, genome
+            )
         
         for i, tid in enumerate(transcript_ids): # predict for every variant-transcript pair
             if len(transcript_variant_embeddings[tid]) != 2:
@@ -237,7 +241,8 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
             ref_norm = ref_norm.cpu().detach().numpy()
 
             # compute most impacted node and features
-            most_impacted_node = int(np.argmax(np.sum(np.abs(alt_norm - ref_norm), axis=1)))
+            l2_node_distances = np.linalg.norm(alt_norm - ref_norm, axis=1)
+            most_impacted_node = int(np.argmax(l2_node_distances))
             top_features = np.argsort(np.abs(alt_norm[most_impacted_node] - ref_norm[most_impacted_node]))[::-1][:10]
             top_features = list(top_features)
             
@@ -266,13 +271,20 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     
     # save variant_effects_df to file
     cols = ['variant_id', 'transcript_id', 'max_effect', 'mean_effect']
-    cols.extend(tissue_names)
+    cols.extend(TISSUE_NAMES)
     variant_effects_df = pd.DataFrame(variant_effects_df, columns=cols)
-    variant_effects_df.to_csv(os.path.join(output_path, 'variant_effects_comprehensive.tsv'), sep='\t', index=False)
+    variant_effects_df.to_csv(
+        os.path.join(output_path, 'variant_effects_comprehensive.tsv'), 
+        sep='\t', index=False)
     
     # interpretability df
-    interpretability_df = pd.DataFrame(interpretability_df, columns=['variant_id', 'gene_id', 'transcript_id', 'most_affected_node', 'top_features'])
-    interpretability_df.to_csv(os.path.join(output_path, 'interpretability_analysis.tsv'), sep='\t', index=False)
+    interpretability_df = pd.DataFrame(
+        interpretability_df, 
+        columns=['variant_id', 'gene_id', 'transcript_id', 'most_affected_node', 'top_features']
+        )
+    interpretability_df.to_csv(
+        os.path.join(output_path, 'interpretability_analysis.tsv'), 
+        sep='\t', index=False)
 
     with open(os.path.join(output_path, f'variant_to_most_affected_node_embedding.pkl'), 'wb') as f:
         rick.dump(node_embed_dictionary, f)
@@ -298,11 +310,13 @@ def visualize_results(gtf_reader, output_path):
           in the 'figures' subdirectory of the output path.
     """
     
-    variant_effects_df = pd.read_csv(os.path.join(output_path, 'variant_effects_comprehensive.tsv'), sep='\t').drop_duplicates(keep='first')
-    interpretability_df = pd.read_csv(os.path.join(output_path, 'interpretability_analysis.tsv'), sep='\t').drop_duplicates(keep='first')
+    variant_effects_df = pd.read_csv(
+        os.path.join(output_path, 'variant_effects_comprehensive.tsv'), 
+        sep='\t').drop_duplicates(keep='first')
+    interpretability_df = pd.read_csv(
+        os.path.join(output_path, 'interpretability_analysis.tsv'), 
+        sep='\t').drop_duplicates(keep='first')
     variant_ids = variant_effects_df['variant_id'].unique()
-
-    tissue_names = ['Brain', 'Caudate_Nucleus', 'Cerebellum', 'Cerebral_Cortex', 'Corpus_Callosum', 'Fetal_Brain', 'Fetal_Spinal_Cord', 'Frontal_Lobe', 'Hippocampus', 'Medulla_Oblongata', 'Pons', 'Spinal_Cord', 'Temporal_Lobe', 'Thalamus', 'bladder', 'blood', 'colon', 'heart', 'kidney', 'liver', 'lung', 'ovary', 'pancreas', 'prostate', 'skeletal_muscle', 'small_intestine', 'spleen', 'stomach', 'testis', 'thyroid']
 
     def get_distinct_colors(n, colormap=cm.tab20):  # or cm.rainbow
         return [colormap(i / max(n - 1, 1)) for i in range(n)]
@@ -315,11 +329,11 @@ def visualize_results(gtf_reader, output_path):
         # plot tissue-specific variant effects
         _, ax = plt.subplots(1, 1, figsize=(9.5, 5))
         for i, row in enumerate(vep.itertuples(index=False)):
-            y_vals = [getattr(row, tissue) for tissue in tissue_names]
-            ax.scatter(range(len(tissue_names)), y_vals, color=colors[i], s=80, alpha=0.8)
-            ax.plot(range(len(tissue_names)), y_vals, color=colors[i], alpha=0.6)
+            y_vals = [getattr(row, tissue) for tissue in TISSUE_NAMES]
+            ax.scatter(range(len(TISSUE_NAMES)), y_vals, color=colors[i], s=80, alpha=0.8)
+            ax.plot(range(len(TISSUE_NAMES)), y_vals, color=colors[i], alpha=0.6)
         ax.set_xticks(np.arange(30))
-        ax.set_xticklabels(tissue_names, rotation=90)
+        ax.set_xticklabels(TISSUE_NAMES, rotation=90)
         ax.set_ylabel('log2 fold change', fontsize=13.5)
         ax.set_xlabel('Tissues', fontsize=12)
         ax.set_title(f'Variant effects for {variant_name}', fontsize=14, pad=10, fontweight='bold')
@@ -332,9 +346,19 @@ def visualize_results(gtf_reader, output_path):
             mlines.Line2D([], [], marker='o', linestyle='-', color=colors[i], markersize=8, label=transcript_ids[i])
             for i in range(len(transcript_ids))
         ]
-        ax.legend(handles=handles, title='Transcript ID', fontsize=10, title_fontsize=12, loc='upper left', bbox_to_anchor=(1, 1), frameon=False)
+        ax.legend(
+            handles=handles, 
+            title='Transcript ID', 
+            fontsize=10, 
+            title_fontsize=12, 
+            loc='upper left', 
+            bbox_to_anchor=(1, 1), 
+            frameon=False
+            )
         plt.tight_layout()
-        plt.savefig(f'{output_path}/figures/variant_effects_{variant_name}.png', dpi=600, bbox_inches='tight')
+        plt.savefig(
+            f'{output_path}/figures/variant_effects_{variant_name}.png', dpi=600, bbox_inches='tight'
+            )
         plt.close()
 
         # plot structure and most affected nodes
@@ -364,16 +388,23 @@ if __name__ == '__main__':
     parser.add_argument('--visualize', action='store_true', default=False, help='Whether to visualize results.')
     args = parser.parse_args()
 
+    pl.seed_everything(42, workers=True)
+
     if not os.path.exists(args.output_path):
         os.makedirs(args.output_path)
-    if not os.path.exists(os.path.join(args.output_path, 'figures')):
-        os.makedirs(os.path.join(args.output_path, 'figures'))
 
-    model_path = '/mnt/home/alitman/ceph/otari/resources/otari.pth.gz'
+    model_path = 'resources/otari.pth.gz'
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f'Model file not found: {model_path}')
+    if not os.path.exists(args.variant_path):
+        raise FileNotFoundError(f'Variant file not found: {args.variant_path}')
     
+    print('Starting Otari variant effect prediction...')
     gtf_reader = predict_variant_effects(model_path, args.variant_path, args.output_path, annotate=args.annotate)
 
     if args.visualize:
+        if not os.path.exists(os.path.join(args.output_path, 'figures')):
+            os.makedirs(os.path.join(args.output_path, 'figures'))
         visualize_results(gtf_reader, args.output_path)
 
     print('Otari variant effect prediction completed! Results saved to:', args.output_path)
