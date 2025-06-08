@@ -188,7 +188,6 @@ class IsoAbundanceGNN(pl.LightningModule):
             "lr_scheduler": self.scheduler,
         } 
 
-        
     def log_metrics(self, stage, x, y, tissue, batch_size):
         self.log(f'{stage}/rocauc_{tissue}', roc_auc_score(y, x), on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
         y_pred = [1 if score > 0.5 else 0 for score in x]
