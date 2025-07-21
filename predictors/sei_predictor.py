@@ -11,14 +11,12 @@ from selene_sdk.sequences.genome import Genome
 
 from .models.sei import Sei
 
-CWD_DIR = os.path.dirname(os.path.realpath(__file__))
-
 
 class SeiPredictor:
     def __init__(self, genome, strand_specific = False, use_cuda = False):
-        sei_model_path = os.path.join(CWD_DIR, '../resources/model_weights/sei.pth')
-        distinct_features_path = os.path.join(CWD_DIR, '../resources/model_weights/sei.target.names')
-        histone_features_path = os.path.join(CWD_DIR, '../resources/model_weights/histone_features.csv')
+        sei_model_path = 'resources/model_weights/sei.pth'
+        distinct_features_path = 'resources/model_weights/sei.target.names'
+        histone_features_path = 'resources/model_weights/histone_features.csv'
 
         distinct_features = load_features_list(distinct_features_path)
 

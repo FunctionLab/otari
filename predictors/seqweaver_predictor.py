@@ -9,13 +9,11 @@ from selene_sdk.sequences.genome import Genome
 
 from .models.seqweaver import Seqweaver
 
-CWD_DIR = os.path.dirname(os.path.realpath(__file__))
-
 
 class SeqweaverPredictor:
     def __init__(self, genome, use_cuda = False):
-        seqweaver_model_path = os.path.join(CWD_DIR, '../resources/model_weights/human_seqweaver.pth')
-        distinct_features_path = os.path.join(CWD_DIR, '../resources/model_weights/seqweaver.colnames')
+        seqweaver_model_path = 'resources/model_weights/human_seqweaver.pth'
+        distinct_features_path = 'resources/model_weights/seqweaver.colnames'
         distinct_features = load_features_list(distinct_features_path)
         seqweaver_model = Seqweaver(len(distinct_features))
         sdk_genome = Genome(genome.genome_path)

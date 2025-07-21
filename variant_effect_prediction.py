@@ -12,14 +12,13 @@ import pickle as rick
 from torch_geometric.data import Data
 import pytorch_lightning as pl
 from matplotlib import pyplot as plt
-import seaborn as sns
 import matplotlib.cm as cm
 import matplotlib.lines as mlines
 
 from utils.utils import assign_to_genes
-from get_variant_node_embeddings import main, read_gtf
+from get_variant_node_embeddings import main
 from preprocess.preprocess_data import convert_edges
-from utils.genome_utils import Genome
+from utils.genome_utils import Genome, GTFReader
 from model.otari import Otari
 from structure_visualization import plot_transcript_structures
 
@@ -197,8 +196,10 @@ def predict_variant_effects(model_path, variant_path, output_path, annotate):
     model.eval()
 
     # load gtf reader and Genome object
-    gtf_reader = read_gtf()
-    genome = Genome('resources/hg38.fa.gz')
+    gtf_path = 'resources/gencode.v47.basic.annotation.gtf.gz'
+    genome_path = 'resources/hg38.fa.gz'
+    gtf_reader = GTFReader(gtf_path, genome_path = genome_path, add_splice_site = True)
+    genome = Genome(genome_path)
 
     # store variant effects
     variant_effects_df = []
