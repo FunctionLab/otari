@@ -28,13 +28,13 @@ conda activate otari
 
 ### Setup
 
-Please download and extract the `resources` subdirectory into the root directory of Otari. This subdirectory contains the Otari model weights, ConvSplice, Sei, and Seqweaver model weights, hg38 FASTA files, GENCODE annotations, pickle files, node sequence attributes, transcript datasets and more before proceeding:
+Please download and extract the trained Otari model and `resources` into the Otari directory (`/otari/resources/`) before proceeding. `resources` contains the ConvSplice, Sei, and Seqweaver model weights, hg38 FASTA files and index files, GENCODE v47 annotations and associated data files, and transcriptome datasets for training and validation. Note that Otari model weights are also placed into `resources`.
 
 ```
 sh ./download_data.sh
 ```
 
-- [Otari model weights only](https://doi.org/10.5281/zenodo.16432269)
+- [Otari model](https://doi.org/10.5281/zenodo.16432269)
 - [Otari framework `resources` directory](https://doi.org/10.5281/zenodo.4906961)
 
 
