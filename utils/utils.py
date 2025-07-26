@@ -37,19 +37,19 @@ def compute_tissue_cutoffs(dataset='espresso'):
         containing the 30th and 70th percentile cutoffs for the respective tissue.
     Notes:
         - For 'espresso', the function reads data from 
-          '../resources/isoform_data_cpm_ESPRESSO_add_features.tsv.gz'.
+          '../resources/ESPRESSO_isoform_data.tsv.gz'.
         - For 'gtex', the function reads data from 
-          '../resources/isoform_data_tpm_GTEx_long_reads_add_features.tsv.gz', 
+          '../resources/GTEx_isoform_data.tsv.gz', 
           merges samples from the same tissues, and excludes certain cell lines.
         - For 'ctx', the function reads data from 
-          '../resources/HumanCTX_transcripts.csv', filters out novel transcripts, 
+          '../resources/CTX_isoform_data.tsv.gz', filters out novel transcripts, 
           and computes averages across samples for adult and fetal cortex.
     """
 
     tissue_to_percentiles = {}
 
     if dataset == 'espresso':
-        abundance_df = pd.read_csv('../resources/isoform_data_cpm_ESPRESSO_add_features.tsv.gz', sep='\t', header=0)
+        abundance_df = pd.read_csv('../resources/ESPRESSO_isoform_data.tsv.gz', sep='\t', header=0)
         
         for tissue in list(abundance_df.columns)[5:-4]:
             abundances = list(abundance_df[tissue])
@@ -61,7 +61,7 @@ def compute_tissue_cutoffs(dataset='espresso'):
             tissue_to_percentiles[tissue] = (percentile_lower, percentile_upper)
     
     elif dataset == 'gtex':
-        abundance_df = pd.read_csv('../resources/isoform_data_tpm_GTEx_long_reads_add_features.tsv.gz', sep='\t', header=0)
+        abundance_df = pd.read_csv('../resources/GTEx_isoform_data.tsv.gz', sep='\t', header=0)
 
         # merge samples from the same tissues
         tissue_names = list(abundance_df.loc[:,'GTEX-1192X-0011-R10a-SM-4RXXZ|Brain - Frontal Cortex (BA9)':'GTEX-WY7C-0008-SM-3NZB5_exp|Cells - Cultured fibroblasts'].columns)
@@ -96,7 +96,7 @@ def compute_tissue_cutoffs(dataset='espresso'):
             tissue_to_percentiles[tissue] = (percentile_lower, percentile_upper)
 
     elif dataset == 'ctx':
-        abundance_df = pd.read_csv('../resources/HumanCTX_transcripts.csv')
+        abundance_df = pd.read_csv('../resources/CTX_isoform_data.tsv.gz')
         abundance_df = abundance_df[abundance_df['associated_transcript'] != 'novel']
 
         # take average across samples
