@@ -20,4 +20,4 @@ train:
     
 seed: 42
 save_model: True
-model_save_path: "resources/otari.pth"
+model_save_path: "~/otari/resources/otari.pth"
