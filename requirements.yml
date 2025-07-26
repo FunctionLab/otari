@@ -343,4 +343,3 @@ dependencies:
     - umap-learn==0.5.7
     - vector-quantize-pytorch==1.21.1
     - wandb==0.17.0
-prefix: /mnt/home/alitman/anaconda3/envs/iso
