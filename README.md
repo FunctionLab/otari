@@ -34,7 +34,7 @@ Please download and extract the `resources` subdirectory into the root directory
 sh ./download_data.sh
 ```
 
-- [Otari model weights only](https://doi.org/10.5281/zenodo.4906996)
+- [Otari model weights only](https://doi.org/10.5281/zenodo.16432269)
 - [Otari framework `resources` directory](https://doi.org/10.5281/zenodo.4906961)
 
 
