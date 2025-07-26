@@ -12,7 +12,7 @@ mkdir -p logfiles
 vcf_filepath="${1:-}"  # path to vcf file
 outdir="${2:-}"        # path to output dir
 annotate="${3:-true}"  # whether to annotate
-visualize="${4:-true}" # whether to visualize results
+visualize="${4:-false}" # whether to visualize results
 
 if [ "$visualize" = "true" ]; then
     if [ "$annotate" = "true" ]; then
