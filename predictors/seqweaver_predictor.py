@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 from tqdm import tqdm
 from selene_sdk.predict import AnalyzeSequences
@@ -12,8 +10,8 @@ from .models.seqweaver import Seqweaver
 
 class SeqweaverPredictor:
     def __init__(self, genome, use_cuda = False):
-        seqweaver_model_path = 'resources/model_weights/human_seqweaver.pth'
-        distinct_features_path = 'resources/model_weights/seqweaver.colnames'
+        seqweaver_model_path = '../resources/model_weights/human_seqweaver.pth'
+        distinct_features_path = '../resources/model_weights/seqweaver.colnames'
         distinct_features = load_features_list(distinct_features_path)
         seqweaver_model = Seqweaver(len(distinct_features))
         sdk_genome = Genome(genome.genome_path)

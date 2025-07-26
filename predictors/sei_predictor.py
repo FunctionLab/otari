@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
@@ -14,9 +12,9 @@ from .models.sei import Sei
 
 class SeiPredictor:
     def __init__(self, genome, strand_specific = False, use_cuda = False):
-        sei_model_path = 'resources/model_weights/sei.pth'
-        distinct_features_path = 'resources/model_weights/sei.target.names'
-        histone_features_path = 'resources/model_weights/histone_features.csv'
+        sei_model_path = '../resources/model_weights/sei.pth'
+        distinct_features_path = '../resources/model_weights/sei.target.names'
+        histone_features_path = '../resources/model_weights/histone_features.csv'
 
         distinct_features = load_features_list(distinct_features_path)
 
