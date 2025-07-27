@@ -126,47 +126,36 @@ def binarize(x, tissue, tissue_cutoffs):
 
 def assign_to_genes(variants, genes, window=2000):
     """
-    Annotates genetic variants by assigning them to nearby genes based on their genomic positions.
-    This function identifies genes that are within a specified window (in base pairs) 
-    around the transcription start site (TSS) of each variant. It returns a DataFrame 
-    containing the variants annotated with the corresponding gene information.
-    Args:
-        variants (pd.DataFrame): A DataFrame containing variant information. 
-            Expected columns include:
-                - 'chr': Chromosome of the variant.
-                - 'pos': Position of the variant on the chromosome.
-        genes (pd.DataFrame): A DataFrame containing gene information. 
-            Expected columns include:
-                - 'chr': Chromosome of the gene.
-                - 'start': Start position of the gene.
-                - 'end': End position of the gene.
-                - 'name': Name of the gene.
-                - 'strand': Strand of the gene ('+' or '-').
-                - 'feature': Feature type (e.g., 'gene').
-        window (int, optional): The number of base pairs around the TSS to consider 
-            for assigning variants to genes. Defaults to 2000.
-    Returns:
-        pd.DataFrame: A DataFrame containing the annotated variants. 
-            Includes all original columns from the `variants` DataFrame, 
-            with additional columns:
-                - 'gene': Name of the assigned gene.
-                - 'strand': Strand of the assigned gene.
-    """
+    Annotates genetic variants by assigning them to genes if they fall within either:
+    (1) the gene body or 
+    (2) a specified window (± N bp) around the transcription start site (TSS), 
+    taking strand orientation into account.
 
+    Assumes variant positions are 0-based and converts them to 1-based for GENCODE match.
+    """
     assigned_variants = []
-    
-    for _, row in variants.iterrows():
-        matching_genes = genes[(genes['start']-window <= row['pos']) & (genes['end'] >= row['pos']) & (genes['chr'] == str(row['chr'])) & (genes['feature'] == 'gene')]
-        
-        if matching_genes.empty: 
-            continue
-        
-        for _, gene_row in matching_genes.iterrows():
-            new_row = row.copy() 
-            new_row['gene'] = gene_row['name'] 
-            new_row['strand'] = gene_row['strand']
-            assigned_variants.append(new_row)
-    
-    assigned_variants_df = pd.DataFrame(assigned_variants)
-    
-    return assigned_variants_df
+
+    for _, var in variants.iterrows():
+        pos_1based = var['pos'] + 1
+
+        # filter genes on the same chromosome
+        chrom_genes = genes[
+            (genes['chr'] == str(var['chr'])) &
+            (genes['feature'] == 'gene')
+        ]
+
+        for _, gene in chrom_genes.iterrows():
+            # strand-aware TSS
+            tss = gene['start'] if gene['strand'] == '+' else gene['end']
+
+            # check both gene body and TSS window
+            within_gene_body = gene['start'] <= pos_1based <= gene['end']
+            within_tss_window = (tss - window) <= pos_1based <= (tss + window)
+
+            if within_gene_body or within_tss_window:
+                new_row = var.copy()
+                new_row['gene'] = gene['name']
+                new_row['strand'] = gene['strand']
+                assigned_variants.append(new_row)
+
+    return pd.DataFrame(assigned_variants)
