@@ -126,36 +126,37 @@ def binarize(x, tissue, tissue_cutoffs):
 
 def assign_to_genes(variants, genes, window=2000):
     """
-    Annotates genetic variants by assigning them to genes if they fall within either:
-    (1) the gene body or 
-    (2) a specified window (± N bp) around the transcription start site (TSS), 
-    taking strand orientation into account.
+    Annotates variants with genes if they fall within:
+    (1) the gene body, or
+    (2) ±window around the TSS, or 
+    (3) ±window around the gene end.
 
-    Assumes variant positions are 0-based and converts them to 1-based for GENCODE match.
+    Assumes variants are 0-based and genes are 1-based (GENCODE).
     """
-    assigned_variants = []
+    assigned = []
 
     for _, var in variants.iterrows():
-        pos_1based = var['pos'] + 1
+        pos = var['pos'] + 1  # convert to 1-based
 
-        # filter genes on the same chromosome
-        chrom_genes = genes[
-            (genes['chr'] == str(var['chr'])) &
+        # subset relevant genes
+        gene_subset = genes[
+            (genes['chr'] == str(var['chr'])) & 
             (genes['feature'] == 'gene')
         ]
 
-        for _, gene in chrom_genes.iterrows():
-            # strand-aware TSS
-            tss = gene['start'] if gene['strand'] == '+' else gene['end']
+        for _, gene in gene_subset.iterrows():
+            strand = gene['strand']
+            tss = gene['start'] if strand == '+' else gene['end']
+            end = gene['end'] if strand == '+' else gene['start']
 
-            # check both gene body and TSS window
-            within_gene_body = gene['start'] <= pos_1based <= gene['end']
-            within_tss_window = (tss - window) <= pos_1based <= (tss + window)
+            if (
+                gene['start'] <= pos <= gene['end'] or
+                tss - window <= pos <= tss + window or
+                end - window <= pos <= end + window
+            ):
+                annotated = var.copy()
+                annotated['gene'] = gene['name']
+                annotated['strand'] = strand
+                assigned.append(annotated)
 
-            if within_gene_body or within_tss_window:
-                new_row = var.copy()
-                new_row['gene'] = gene['name']
-                new_row['strand'] = gene['strand']
-                assigned_variants.append(new_row)
-
-    return pd.DataFrame(assigned_variants)
+    return pd.DataFrame(assigned)
