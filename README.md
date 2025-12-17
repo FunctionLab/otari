@@ -2,7 +2,6 @@
   <img height="200" src="images/logo.png">
 </p>
 
-
 Welcome to the Otari framework repository! Otari is a comprehensive and interpretable graph-based framework of transcript isoform regulation, powering the characterization of transcriptomic diversity and isoform-level variant effects at scale.
 
 This repository can be used to run the Otari model and get the Otari regulatory profiles, isoform abundance predictions, and variant effect predictions for input sequences or variants.
